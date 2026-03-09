@@ -68,6 +68,91 @@
       from { opacity: 0; transform: translateY(8px); }
       to { opacity: 1; transform: translateY(0); }
     }
+
+    .prose-shell,
+.generated-html {
+  width: 100%;
+  max-width: 100%;
+  color: #0f172a;
+}
+
+.generated-html section,
+.generated-html div {
+  max-width: 100%;
+}
+
+.generated-html h1 {
+  font-size: 2rem;
+  line-height: 1.15;
+  font-weight: 800;
+  margin: 0 0 1rem;
+}
+
+.generated-html h2 {
+  font-size: 1.5rem;
+  line-height: 1.25;
+  font-weight: 700;
+  margin: 2rem 0 0.75rem;
+}
+
+.generated-html h3 {
+  font-size: 1.125rem;
+  line-height: 1.35;
+  font-weight: 700;
+  margin: 1.5rem 0 0.5rem;
+}
+
+.generated-html p {
+  font-size: 1rem;
+  line-height: 1.8;
+  margin: 0 0 1rem;
+  color: #334155;
+}
+
+.generated-html ul,
+.generated-html ol {
+  margin: 0 0 1.25rem 1.25rem;
+  padding-left: 1rem;
+  color: #334155;
+}
+
+.generated-html li {
+  margin-bottom: 0.75rem;
+  line-height: 1.7;
+}
+
+.generated-html strong {
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.generated-html > *:first-child {
+  margin-top: 0;
+}
+
+.generated-html > *:last-child {
+  margin-bottom: 0;
+}
+
+@media (max-width: 640px) {
+  .generated-html h1 {
+    font-size: 1.65rem;
+  }
+
+  .generated-html h2 {
+    font-size: 1.3rem;
+  }
+
+  .generated-html h3 {
+    font-size: 1.05rem;
+  }
+
+  .generated-html p,
+  .generated-html li {
+    font-size: 1rem;
+    line-height: 1.75;
+  }
+}
   </style>
 </head>
 <body class="text-slate-100 antialiased">
