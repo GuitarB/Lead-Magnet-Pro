@@ -63,7 +63,8 @@ export async function onRequestGet(context) {
       success: true,
       customerId,
       plan,
-      status: subObj?.status || "active"
+      status: subObj?.status || "active",
+      customerEmail: session.customer_details?.email || session.customer_email || null
     });
   } catch (error) {
     return jsonResponse(

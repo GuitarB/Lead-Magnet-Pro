@@ -121,8 +121,9 @@ Return only polished HTML for the lead magnet.
       return jsonResponse({ success: false, error: "No content returned from OpenAI." }, 500);
     }
 
+    let savedGeneration = null;
     if (isPaidPlan && env.DB) {
-      await recordUsageAndGeneration(env.DB, {
+      savedGeneration = await recordUsageAndGeneration(env.DB, {
         customerId,
         plan: normalizedPlan,
         brandUrl,
@@ -133,7 +134,13 @@ Return only polished HTML for the lead magnet.
       });
     }
 
-    return jsonResponse({ success: true, html: generatedHtml });
+    return jsonResponse({
+      success: true,
+      html: generatedHtml,
+      savedGeneration: savedGeneration
+        ? { createdAt: savedGeneration.createdAt, plan: savedGeneration.plan, magnetType: savedGeneration.magnetType }
+        : null
+    });
   } catch (error) {
     return jsonResponse(
       {
@@ -245,6 +252,12 @@ async function recordUsageAndGeneration(db, generation) {
       nowIso
     )
     .run();
+
+  return {
+    createdAt: nowIso,
+    plan: generation.plan,
+    magnetType: generation.magnetType
+  };
 }
 
 function jsonResponse(data, status = 200) {
