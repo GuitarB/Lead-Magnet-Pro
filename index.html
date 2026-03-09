@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  />
+  <title>Lead-Magnet Pro | AI Lead Magnet Generator</title>
+  <meta
+    name="description"
+    content="Generate high-converting, professional lead magnets from a brand URL or uploaded file using AI."
+  />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: "#eef2ff",
+              100: "#e0e7ff",
+              200: "#c7d2fe",
+              300: "#a5b4fc",
+              400: "#818cf8",
+              500: "#6366f1",
+              600: "#4f46e5",
+              700: "#4338ca",
+              800: "#3730a3",
+              900: "#312e81"
+            }
+          },
+          boxShadow: {
+            glow: "0 0 0 1px rgba(99,102,241,.18), 0 10px 40px rgba(99,102,241,.18)"
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background:
+        radial-gradient(circle at top, rgba(99, 102, 241, 0.12), transparent 25%),
+        radial-gradient(circle at 80% 20%, rgba(59, 130, 246, 0.10), transparent 20%),
+        linear-gradient(180deg, #020617 0%, #0f172a 50%, #020617 100%);
+    }
+
+    .glass {
+      background: rgba(15, 23, 42, 0.72);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(148, 163, 184, 0.15);
+    }
+
+    .hidden-view {
+      display: none !important;
+    }
+
+    .fade-in {
+      animation: fadeIn 0.35s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body class="text-slate-100 antialiased">
+  <!-- Top Nav -->
+  <header class="sticky top-0 z-40 border-b border-white/10 bg-slate-950/70 backdrop-blur">
+    <div class="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+      <a href="#" class="flex items-center gap-3">
+        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-600 font-bold shadow-glow">
+          LM
+        </div>
+        <div>
+          <p class="text-sm font-semibold tracking-wide text-white">Lead-Magnet Pro</p>
+          <p class="text-xs text-slate-400">AI-powered lead magnet generation</p>
+        </div>
+      </a>
+
+      <nav class="hidden items-center gap-8 md:flex">
+        <a href="#how-it-works" class="text-sm text-slate-300 transition hover:text-white">How it Works</a>
+        <a href="#dashboard" class="text-sm text-slate-300 transition hover:text-white">Dashboard</a>
+      </nav>
+
+      <button
+        id="navGetStartedBtn"
+        class="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-slate-200"
+      >
+        Get Started
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <!-- LANDING VIEW -->
+    <section id="landingView" class="fade-in">
+      <!-- Hero -->
+      <section class="relative overflow-hidden">
+        <div class="mx-auto grid max-w-7xl gap-14 px-6 py-20 md:grid-cols-2 md:py-28">
+          <div class="flex flex-col justify-center">
+            <div class="mb-6 inline-flex w-fit items-center gap-2 rounded-full border border-brand-400/20 bg-brand-500/10 px-3 py-1 text-xs font-medium text-brand-200">
+              <span class="inline-block h-2 w-2 rounded-full bg-brand-400"></span>
+              Built for coaches, consultants, agencies, and creators
+            </div>
+
+            <h1 class="max-w-2xl text-4xl font-bold leading-tight tracking-tight text-white md:text-6xl">
+              Turn your brand into a
+              <span class="bg-gradient-to-r from-brand-300 to-cyan-300 bg-clip-text text-transparent">
+                polished lead magnet
+              </span>
+              in minutes.
+            </h1>
+
+            <p class="mt-6 max-w-xl text-lg leading-8 text-slate-300">
+              Paste a website URL or upload a file, and generate a professional, PDF-ready lead magnet designed to attract qualified leads and build authority.
+            </p>
+
+            <div class="mt-8 flex flex-col gap-4 sm:flex-row">
+              <button
+                id="heroStartBtn"
+                class="rounded-2xl bg-brand-600 px-6 py-3 text-base font-semibold text-white shadow-glow transition hover:bg-brand-500"
+              >
+                Generate Your Lead Magnet
+              </button>
+
+              <a
+                href="#how-it-works"
+                class="rounded-2xl border border-white/10 bg-white/5 px-6 py-3 text-base font-semibold text-slate-200 transition hover:bg-white/10"
+              >
+                See How It Works
+              </a>
+            </div>
+
+            <div class="mt-10 flex flex-wrap items-center gap-6 text-sm text-slate-400">
+              <div class="flex items-center gap-2">
+                <span class="text-emerald-400">●</span>
+                PDF-ready output
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="text-emerald-400">●</span>
+                Instant branded drafts
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="text-emerald-400">●</span>
+                Stripe-ready monetization
+              </div>
+            </div>
+          </div>
+
+          <!-- Hero Card / Product Preview -->
+          <div class="flex items-center justify-center">
+            <div class="glass w-full max-w-2xl rounded-3xl p-5 shadow-2xl">
+              <div class="rounded-2xl border border-white/10 bg-slate-900/80 p-4">
+                <div class="mb-4 flex items-center justify-between border-b border-white/10 pb-4">
+                  <div>
+                    <p class="text-sm font-semibold text-white">Lead Magnet Preview</p>
+                    <p class="text-xs text-slate-400">Example AI-generated result</p>
+                  </div>
+                  <div class="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-xs font-medium text-emerald-300">
+                    PDF-ready HTML
+                  </div>
+                </div>
+
+                <div class="space-y-4">
+                  <div class="rounded-2xl border border-brand-400/15 bg-gradient-to-r from-brand-500/10 to-cyan-500/10 p-5">
+                    <p class="text-xs uppercase tracking-[0.22em] text-brand-200">Headline</p>
+                    <h3 class="mt-2 text-2xl font-bold text-white">
+                      The 7-Step Client Attraction Blueprint
+                    </h3>
+                    <p class="mt-2 text-sm leading-6 text-slate-300">
+                      A practical guide for turning cold traffic into qualified leads using a high-trust content funnel.
+                    </p>
+                  </div>
+
+                  <div class="grid gap-4 md:grid-cols-2">
+                    <div class="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
+                      <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Audience</p>
+                      <p class="mt-2 text-sm text-slate-200">B2B service providers, coaches, and agencies</p>
+                    </div>
+                    <div class="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
+                      <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Format</p>
+                      <p class="mt-2 text-sm text-slate-200">Checklist + mini-guide + CTA section</p>
+                    </div>
+                  </div>
+
+                  <div class="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
+                    <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Included Sections</p>
+                    <ul class="mt-3 space-y-2 text-sm text-slate-300">
+                      <li>• Magnetic cover page and subheadline</li>
+                      <li>• Problem / solution framing</li>
+                      <li>• Step-by-step tactical guidance</li>
+                      <li>• Trust-building CTA and next-step offer</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- How it Works -->
+      <section id="how-it-works" class="mx-auto max-w-7xl px-6 py-8 md:py-16">
+        <div class="mb-12 max-w-2xl">
+          <p class="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-brand-300">
+            How It Works
+          </p>
+          <h2 class="text-3xl font-bold text-white md:text-4xl">
+            From raw brand input to polished lead magnet
+          </h2>
+          <p class="mt-4 text-slate-300">
+            Lead-Magnet Pro simplifies the production workflow so you can move from idea to deliverable without hiring a designer or copywriter for every asset.
+          </p>
+        </div>
+
+        <div class="grid gap-6 md:grid-cols-3">
+          <div class="glass rounded-3xl p-6">
+            <div class="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-500/15 text-lg font-bold text-brand-200">
+              1
+            </div>
+            <h3 class="text-xl font-semibold text-white">Add your brand source</h3>
+            <p class="mt-3 text-sm leading-6 text-slate-300">
+              Submit a website URL or upload a source document with your positioning, offer details, and audience context.
+            </p>
+          </div>
+
+          <div class="glass rounded-3xl p-6">
+            <div class="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-500/15 text-lg font-bold text-brand-200">
+              2
+            </div>
+            <h3 class="text-xl font-semibold text-white">AI structures the asset</h3>
+            <p class="mt-3 text-sm leading-6 text-slate-300">
+              The model extracts messaging themes and generates a clean, conversion-focused lead magnet layout.
+            </p>
+          </div>
+
+          <div class="glass rounded-3xl p-6">
+            <div class="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-500/15 text-lg font-bold text-brand-200">
+              3
+            </div>
+            <h3 class="text-xl font-semibold text-white">Export and publish</h3>
+            <p class="mt-3 text-sm leading-6 text-slate-300">
+              Review the formatted HTML, convert it to PDF, and use it in opt-in funnels, email capture pages, or client campaigns.
+            </p>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <!-- DASHBOARD VIEW -->
+    <section id="dashboardView" class="hidden-view">
+      <div class="mx-auto max-w-7xl px-6 py-12 md:py-16">
+        <div class="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div>
+            <p class="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-brand-300">
+              Input Dashboard
+            </p>
+            <h2 class="text-3xl font-bold text-white md:text-4xl">
+              Generate your lead magnet
+            </h2>
+            <p class="mt-3 max-w-2xl text-slate-300">
+              Enter a brand URL, optionally upload a supporting file, and prepare the prompt payload for the generation API in Phase 2.
+            </p>
+          </div>
+
+          <button
+            id="backToLandingBtn"
+            class="rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-slate-200 transition hover:bg-white/10"
+          >
+            ← Back to Landing
+          </button>
+        </div>
+
+        <div class="grid gap-8 lg:grid-cols-[1.15fr_0.85fr]">
+          <!-- Main Form -->
+          <div class="glass rounded-3xl p-6 md:p-8">
+            <form id="leadForm" class="space-y-6">
+              <div>
+                <label for="brandUrl" class="mb-2 block text-sm font-medium text-slate-200">
+                  Brand URL
+                </label>
+                <input
+                  id="brandUrl"
+                  name="brandUrl"
+                  type="url"
+                  placeholder="https://yourbrand.com"
+                  class="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-slate-100 placeholder:text-slate-500 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+                />
+                <p class="mt-2 text-xs text-slate-400">
+                  Example: company homepage, product page, or about page
+                </p>
+              </div>
+
+              <div>
+                <label for="supportFile" class="mb-2 block text-sm font-medium text-slate-200">
+                  Upload Supporting File
+                </label>
+                <input
+                  id="supportFile"
+                  name="supportFile"
+                  type="file"
+                  accept=".pdf,.doc,.docx,.txt,.md"
+                  class="block w-full rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-sm text-slate-300 file:mr-4 file:rounded-xl file:border-0 file:bg-brand-600 file:px-4 file:py-2 file:font-semibold file:text-white hover:file:bg-brand-500"
+                />
+                <p class="mt-2 text-xs text-slate-400">
+                  Optional: upload a brief, offer notes, or an existing lead magnet draft
+                </p>
+              </div>
+
+              <div>
+                <label for="magnetType" class="mb-2 block text-sm font-medium text-slate-200">
+                  Lead Magnet Type
+                </label>
+                <select
+                  id="magnetType"
+                  name="magnetType"
+                  class="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-slate-100 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+                >
+                  <option value="guide">Guide</option>
+                  <option value="checklist">Checklist</option>
+                  <option value="ebook">eBook</option>
+                  <option value="worksheet">Worksheet</option>
+                  <option value="cheatsheet">Cheat Sheet</option>
+                </select>
+              </div>
+
+              <div>
+                <label for="audience" class="mb-2 block text-sm font-medium text-slate-200">
+                  Target Audience
+                </label>
+                <input
+                  id="audience"
+                  name="audience"
+                  type="text"
+                  placeholder="e.g. founders, consultants, fitness coaches"
+                  class="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-slate-100 placeholder:text-slate-500 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+                />
+              </div>
+
+              <div>
+                <label for="goal" class="mb-2 block text-sm font-medium text-slate-200">
+                  Primary Goal
+                </label>
+                <textarea
+                  id="goal"
+                  name="goal"
+                  rows="4"
+                  placeholder="What should this lead magnet help the business achieve?"
+                  class="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-slate-100 placeholder:text-slate-500 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+                ></textarea>
+              </div>
+
+              <div class="flex flex-col gap-4 sm:flex-row">
+                <button
+                  id="generateBtn"
+                  type="submit"
+                  class="inline-flex items-center justify-center rounded-2xl bg-brand-600 px-6 py-3 text-base font-semibold text-white shadow-glow transition hover:bg-brand-500 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Generate Lead Magnet
+                </button>
+
+                <button
+                  id="demoResultBtn"
+                  type="button"
+                  class="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-6 py-3 text-base font-semibold text-slate-200 transition hover:bg-white/10"
+                >
+                  Preview Result State
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Sidebar -->
+          <aside class="space-y-6">
+            <div class="glass rounded-3xl p-6">
+              <p class="text-sm font-semibold text-white">Generation Status</p>
+              <div class="mt-4 rounded-2xl border border-white/10 bg-slate-950/60 p-4">
+                <p id="statusBadge" class="inline-flex rounded-full border border-amber-400/20 bg-amber-400/10 px-3 py-1 text-xs font-medium text-amber-300">
+                  Awaiting input
+                </p>
+                <p id="statusText" class="mt-3 text-sm leading-6 text-slate-300">
+                  Complete the fields and submit to prepare the generation payload.
+                </p>
+              </div>
+            </div>
+
+            <div class="glass rounded-3xl p-6">
+              <p class="text-sm font-semibold text-white">Current Form State</p>
+              <div class="mt-4 space-y-3 text-sm text-slate-300">
+                <div class="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
+                  <span class="text-slate-400">Brand URL:</span>
+                  <p id="previewBrandUrl" class="mt-1 break-all text-slate-200">—</p>
+                </div>
+                <div class="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
+                  <span class="text-slate-400">File:</span>
+                  <p id="previewFileName" class="mt-1 text-slate-200">—</p>
+                </div>
+                <div class="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
+                  <span class="text-slate-400">Magnet Type:</span>
+                  <p id="previewMagnetType" class="mt-1 text-slate-200">Guide</p>
+                </div>
+                <div class="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
+                  <span class="text-slate-400">Audience:</span>
+                  <p id="previewAudience" class="mt-1 text-slate-200">—</p>
+                </div>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <!-- RESULT VIEW -->
+    <section id="resultView" class="hidden-view">
+      <div class="mx-auto max-w-7xl px-6 py-12 md:py-16">
+        <div class="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div>
+            <p class="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-brand-300">
+              Result
+            </p>
+            <h2 class="text-3xl font-bold text-white md:text-4xl">
+              Lead magnet output
+            </h2>
+            <p class="mt-3 max-w-2xl text-slate-300">
+              This is the UI shell for the generated asset. In Phase 2, the content inside this panel will come from your Cloudflare Function and OpenAI call.
+            </p>
+          </div>
+
+          <div class="flex flex-wrap gap-3">
+            <button
+              id="editInputBtn"
+              class="rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-slate-200 transition hover:bg-white/10"
+            >
+              Edit Inputs
+            </button>
+            <button
+              id="startOverBtn"
+              class="rounded-2xl bg-brand-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-brand-500"
+            >
+              Start Over
+            </button>
+          </div>
+        </div>
+
+        <div class="glass rounded-3xl p-6 md:p-8">
+          <div class="mb-6 flex flex-col gap-4 border-b border-white/10 pb-6 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p class="text-sm font-semibold text-white">Generated HTML Preview</p>
+              <p class="mt-1 text-sm text-slate-400">Placeholder result for Phase 1</p>
+            </div>
+            <div class="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-xs font-medium text-emerald-300">
+              Ready for API integration
+            </div>
+          </div>
+
+          <div id="resultCard" class="rounded-3xl border border-white/10 bg-slate-950/70 p-8">
+            <div class="mx-auto max-w-3xl">
+              <p class="text-sm uppercase tracking-[0.25em] text-brand-300">Sample Lead Magnet</p>
+              <h1 class="mt-4 text-4xl font-bold tracking-tight text-white">
+                Your Professional Lead Magnet Will Appear Here
+              </h1>
+              <p class="mt-4 text-lg leading-8 text-slate-300">
+                This placeholder represents the PDF-ready HTML that your backend will generate once the OpenAI integration is connected.
+              </p>
+
+              <div class="mt-8 grid gap-4 md:grid-cols-3">
+                <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Source URL</p>
+                  <p id="resultBrandUrl" class="mt-2 break-all text-sm text-slate-200">—</p>
+                </div>
+                <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Format</p>
+                  <p id="resultMagnetType" class="mt-2 text-sm text-slate-200">—</p>
+                </div>
+                <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Audience</p>
+                  <p id="resultAudience" class="mt-2 text-sm text-slate-200">—</p>
+                </div>
+              </div>
+
+              <div class="mt-8 rounded-2xl border border-dashed border-brand-400/30 bg-brand-500/5 p-6">
+                <p class="text-sm font-semibold text-brand-200">Next Phase Hook</p>
+                <p class="mt-2 text-sm leading-6 text-slate-300">
+                  In Phase 2, this section will be replaced with the HTML returned from
+                  <code class="rounded bg-slate-800 px-2 py-1 text-brand-200">/functions/api/generate.js</code>.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const state = {
+      currentView: "landing",
+      form: {
+        brandUrl: "",
+        fileName: "",
+        magnetType: "guide",
+        audience: "",
+        goal: ""
+      },
+      generatedHtml: ""
+    };
+
+    const els = {
+      landingView: document.getElementById("landingView"),
+      dashboardView: document.getElementById("dashboardView"),
+      resultView: document.getElementById("resultView"),
+
+      navGetStartedBtn: document.getElementById("navGetStartedBtn"),
+      heroStartBtn: document.getElementById("heroStartBtn"),
+      backToLandingBtn: document.getElementById("backToLandingBtn"),
+      editInputBtn: document.getElementById("editInputBtn"),
+      startOverBtn: document.getElementById("startOverBtn"),
+      demoResultBtn: document.getElementById("demoResultBtn"),
+
+      leadForm: document.getElementById("leadForm"),
+      brandUrl: document.getElementById("brandUrl"),
+      supportFile: document.getElementById("supportFile"),
+      magnetType: document.getElementById("magnetType"),
+      audience: document.getElementById("audience"),
+      goal: document.getElementById("goal"),
+
+      statusBadge: document.getElementById("statusBadge"),
+      statusText: document.getElementById("statusText"),
+
+      previewBrandUrl: document.getElementById("previewBrandUrl"),
+      previewFileName: document.getElementById("previewFileName"),
+      previewMagnetType: document.getElementById("previewMagnetType"),
+      previewAudience: document.getElementById("previewAudience"),
+
+      resultBrandUrl: document.getElementById("resultBrandUrl"),
+      resultMagnetType: document.getElementById("resultMagnetType"),
+      resultAudience: document.getElementById("resultAudience")
+    };
+
+    function setView(view) {
+      state.currentView = view;
+
+      els.landingView.classList.add("hidden-view");
+      els.dashboardView.classList.add("hidden-view");
+      els.resultView.classList.add("hidden-view");
+
+      if (view === "landing") {
+        els.landingView.classList.remove("hidden-view");
+        els.landingView.classList.add("fade-in");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+
+      if (view === "dashboard") {
+        els.dashboardView.classList.remove("hidden-view");
+        els.dashboardView.classList.add("fade-in");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+
+      if (view === "result") {
+        els.resultView.classList.remove("hidden-view");
+        els.resultView.classList.add("fade-in");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    }
+
+    function syncStateFromForm() {
+      state.form.brandUrl = els.brandUrl.value.trim();
+      state.form.fileName = els.supportFile.files[0]?.name || "";
+      state.form.magnetType = els.magnetType.value;
+      state.form.audience = els.audience.value.trim();
+      state.form.goal = els.goal.value.trim();
+
+      renderFormPreview();
+    }
+
+    function renderFormPreview() {
+      els.previewBrandUrl.textContent = state.form.brandUrl || "—";
+      els.previewFileName.textContent = state.form.fileName || "—";
+      els.previewMagnetType.textContent =
+        state.form.magnetType.charAt(0).toUpperCase() + state.form.magnetType.slice(1);
+      els.previewAudience.textContent = state.form.audience || "—";
+    }
+
+    function renderResultPreview() {
+      els.resultBrandUrl.textContent = state.form.brandUrl || "—";
+      els.resultMagnetType.textContent =
+        state.form.magnetType.charAt(0).toUpperCase() + state.form.magnetType.slice(1);
+      els.resultAudience.textContent = state.form.audience || "—";
+    }
+
+    function setStatus(type, message) {
+      const badgeStyles = {
+        idle: "border-amber-400/20 bg-amber-400/10 text-amber-300",
+        ready: "border-sky-400/20 bg-sky-400/10 text-sky-300",
+        generating: "border-brand-400/20 bg-brand-400/10 text-brand-200",
+        success: "border-emerald-400/20 bg-emerald-400/10 text-emerald-300"
+      };
+
+      const labels = {
+        idle: "Awaiting input",
+        ready: "Ready to generate",
+        generating: "Generating",
+        success: "Result prepared"
+      };
+
+      els.statusBadge.className =
+        "inline-flex rounded-full border px-3 py-1 text-xs font-medium " + badgeStyles[type];
+
+      els.statusBadge.textContent = labels[type];
+      els.statusText.textContent = message;
+    }
+
+    function resetApp() {
+      state.form = {
+        brandUrl: "",
+        fileName: "",
+        magnetType: "guide",
+        audience: "",
+        goal: ""
+      };
+      state.generatedHtml = "";
+
+      els.leadForm.reset();
+      els.magnetType.value = "guide";
+
+      renderFormPreview();
+      renderResultPreview();
+      setStatus("idle", "Complete the fields and submit to prepare the generation payload.");
+      setView("landing");
+    }
+
+    function validateForm() {
+      const hasUrl = state.form.brandUrl.length > 0;
+      const hasAudience = state.form.audience.length > 0;
+      const hasGoal = state.form.goal.length > 0;
+      return hasUrl || hasAudience || hasGoal;
+    }
+
+    function handleGenerate() {
+      syncStateFromForm();
+
+      if (!validateForm()) {
+        setStatus("idle", "Add at least a URL, audience, or goal before generating.");
+        return;
+      }
+
+      setStatus("generating", "UI shell complete. In Phase 2 this action will call your Cloudflare function.");
+
+      state.generatedHtml = `
+        <section>
+          <h1>${state.form.magnetType} for ${state.form.audience || "your audience"}</h1>
+          <p>Source: ${state.form.brandUrl || "No URL provided"}</p>
+        </section>
+      `.trim();
+
+      renderResultPreview();
+
+      setTimeout(() => {
+        setStatus("success", "Preview state updated successfully.");
+        setView("result");
+      }, 300);
+    }
+
+    els.navGetStartedBtn.addEventListener("click", () => setView("dashboard"));
+    els.heroStartBtn.addEventListener("click", () => setView("dashboard"));
+    els.backToLandingBtn.addEventListener("click", () => setView("landing"));
+    els.editInputBtn.addEventListener("click", () => setView("dashboard"));
+    els.startOverBtn.addEventListener("click", resetApp);
+    els.demoResultBtn.addEventListener("click", handleGenerate);
+
+    ["input", "change"].forEach((eventName) => {
+      els.brandUrl.addEventListener(eventName, () => {
+        syncStateFromForm();
+        setStatus("ready", "Your inputs are being tracked locally and are ready for submission.");
+      });
+
+      els.supportFile.addEventListener(eventName, () => {
+        syncStateFromForm();
+        setStatus("ready", "Supporting file added to local UI state.");
+      });
+
+      els.magnetType.addEventListener(eventName, () => {
+        syncStateFromForm();
+        setStatus("ready", "Lead magnet format updated.");
+      });
+
+      els.audience.addEventListener(eventName, () => {
+        syncStateFromForm();
+        setStatus("ready", "Audience details updated.");
+      });
+
+      els.goal.addEventListener(eventName, () => {
+        syncStateFromForm();
+        setStatus("ready", "Primary goal updated.");
+      });
+    });
+
+    els.leadForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      handleGenerate();
+    });
+
+    renderFormPreview();
+    renderResultPreview();
+    setStatus("idle", "Complete the fields and submit to prepare the generation payload.");
+    setView("landing");
+  </script>
+</body>
+</html>
