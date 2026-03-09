@@ -341,7 +341,7 @@
 
     <!-- DASHBOARD VIEW -->
     <section id="dashboardView" class="hidden-view">
-      <div class="mx-auto max-w-7xl px-6 py-12 md:py-16">
+      <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 md:py-16">
         <div class="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
             <p class="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-brand-300">
@@ -363,9 +363,9 @@
           </button>
         </div>
 
-        <div class="grid gap-8 lg:grid-cols-[1.15fr_0.85fr]">
+        <div class="grid gap-6 lg:grid-cols-[1.15fr_0.85fr] lg:gap-8">
           <!-- Main Form -->
-          <div class="glass rounded-3xl p-6 md:p-8">
+          <div class="glass rounded-3xl p-4 sm:p-6 md:p-8">
             <form id="leadForm" class="space-y-6">
               <div>
                 <label for="brandUrl" class="mb-2 block text-sm font-medium text-slate-200">
@@ -381,6 +381,32 @@
                 <p class="mt-2 text-xs text-slate-400">
                   Example: company homepage, product page, or about page
                 </p>
+              </div>
+
+              <div>
+                <p class="mb-3 block text-sm font-medium text-slate-200">Select Plan</p>
+                <div class="grid gap-3 sm:grid-cols-2">
+                  <label class="rounded-2xl border border-white/10 bg-slate-950/80 p-4 text-sm text-slate-200 transition hover:border-brand-400/60">
+                    <input type="radio" name="plan" value="free" class="mr-2" checked />
+                    <span class="font-semibold">Free</span>
+                    <span class="block text-xs text-slate-400">No checkout required</span>
+                  </label>
+                  <label class="rounded-2xl border border-white/10 bg-slate-950/80 p-4 text-sm text-slate-200 transition hover:border-brand-400/60">
+                    <input type="radio" name="plan" value="starter" class="mr-2" />
+                    <span class="font-semibold">Starter — $9/mo</span>
+                    <span class="block text-xs text-slate-400">20 generations / month</span>
+                  </label>
+                  <label class="rounded-2xl border border-white/10 bg-slate-950/80 p-4 text-sm text-slate-200 transition hover:border-brand-400/60">
+                    <input type="radio" name="plan" value="builder" class="mr-2" />
+                    <span class="font-semibold">Builder — $19/mo</span>
+                    <span class="block text-xs text-slate-400">75 generations / month</span>
+                  </label>
+                  <label class="rounded-2xl border border-white/10 bg-slate-950/80 p-4 text-sm text-slate-200 transition hover:border-brand-400/60">
+                    <input type="radio" name="plan" value="founder" class="mr-2" />
+                    <span class="font-semibold">Founder — $39/mo</span>
+                    <span class="block text-xs text-slate-400">200 generations / month</span>
+                  </label>
+                </div>
               </div>
 
               <div>
@@ -495,6 +521,10 @@
                   <span class="text-slate-400">Audience:</span>
                   <p id="previewAudience" class="mt-1 text-slate-200">—</p>
                 </div>
+                <div class="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
+                  <span class="text-slate-400">Plan:</span>
+                  <p id="previewPlan" class="mt-1 text-slate-200">Free</p>
+                </div>
               </div>
             </div>
           </aside>
@@ -504,7 +534,7 @@
 
     <!-- RESULT VIEW -->
     <section id="resultView" class="hidden-view">
-      <div class="mx-auto max-w-7xl px-6 py-12 md:py-16">
+      <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 md:py-16">
         <div class="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
             <p class="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-brand-300">
@@ -534,7 +564,7 @@
           </div>
         </div>
 
-        <div class="glass rounded-3xl p-6 md:p-8">
+        <div class="glass rounded-3xl p-4 sm:p-6 md:p-8">
           <div class="mb-6 flex flex-col gap-4 border-b border-white/10 pb-6 md:flex-row md:items-center md:justify-between">
             <div>
               <p class="text-sm font-semibold text-white">Generated HTML Preview</p>
@@ -546,7 +576,7 @@
           </div>
 
          <div id="resultCard" class="rounded-3xl border border-white/10 bg-slate-950/70 p-4 md:p-6">
-  <div class="mb-6 grid gap-4 md:grid-cols-3">
+  <div class="mb-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
     <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
       <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Source URL</p>
       <p id="resultBrandUrl" class="mt-2 break-all text-sm text-slate-200">—</p>
@@ -558,6 +588,10 @@
     <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
       <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Audience</p>
       <p id="resultAudience" class="mt-2 text-sm text-slate-200">—</p>
+    </div>
+    <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+      <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Plan</p>
+      <p id="resultPlan" class="mt-2 text-sm text-slate-200">Free</p>
     </div>
   </div>
 
@@ -594,18 +628,15 @@
   </main>
 
   <script>
-    const UNLOCK_KEY = "leadMagnetProUnlocked";
+    const FORM_STATE_KEY = "leadMagnetProFormState";
+    const SUBSCRIPTION_KEY = "leadMagnetProSubscription";
+    const CHECKOUT_INTENT_KEY = "leadMagnetProCheckoutIntent";
+    const PAID_PLANS = new Set(["starter", "builder", "founder"]);
 
     const state = {
       currentView: "landing",
-      isUnlocked: sessionStorage.getItem(UNLOCK_KEY) === "true",
-      form: {
-        brandUrl: "",
-        fileName: "",
-        magnetType: "guide",
-        audience: "",
-        goal: ""
-      },
+      subscription: readStoredSubscription(),
+      form: { brandUrl: "", fileName: "", magnetType: "guide", audience: "", goal: "", plan: "free" },
       generatedHtml: ""
     };
 
@@ -613,7 +644,6 @@
       landingView: document.getElementById("landingView"),
       dashboardView: document.getElementById("dashboardView"),
       resultView: document.getElementById("resultView"),
-
       navGetStartedBtn: document.getElementById("navGetStartedBtn"),
       heroStartBtn: document.getElementById("heroStartBtn"),
       backToLandingBtn: document.getElementById("backToLandingBtn"),
@@ -621,103 +651,129 @@
       startOverBtn: document.getElementById("startOverBtn"),
       demoResultBtn: document.getElementById("demoResultBtn"),
       generateBtn: document.getElementById("generateBtn"),
-
       leadForm: document.getElementById("leadForm"),
       brandUrl: document.getElementById("brandUrl"),
       supportFile: document.getElementById("supportFile"),
       magnetType: document.getElementById("magnetType"),
       audience: document.getElementById("audience"),
       goal: document.getElementById("goal"),
-
+      planOptions: document.querySelectorAll('input[name="plan"]'),
       statusBadge: document.getElementById("statusBadge"),
       statusText: document.getElementById("statusText"),
-
       previewBrandUrl: document.getElementById("previewBrandUrl"),
       previewFileName: document.getElementById("previewFileName"),
       previewMagnetType: document.getElementById("previewMagnetType"),
       previewAudience: document.getElementById("previewAudience"),
-
+      previewPlan: document.getElementById("previewPlan"),
       resultBrandUrl: document.getElementById("resultBrandUrl"),
       resultMagnetType: document.getElementById("resultMagnetType"),
-      resultAudience: document.getElementById("resultAudience")
+      resultAudience: document.getElementById("resultAudience"),
+      resultPlan: document.getElementById("resultPlan")
     };
 
-    function updateGenerateButtonLabel() {
-      els.generateBtn.textContent = state.isUnlocked ? "Generate Lead Magnet" : "Unlock & Generate";
+    function readStoredSubscription() {
+      try { return JSON.parse(sessionStorage.getItem(SUBSCRIPTION_KEY) || "null") || { active: false, plan: "free", customerId: "" }; }
+      catch { return { active: false, plan: "free", customerId: "" }; }
+    }
+    const titleize = (value) => value ? value.charAt(0).toUpperCase() + value.slice(1) : "Free";
+    const normalizeBrandUrl = (value) => {
+      const trimmed = value.trim();
+      if (!trimmed) return "";
+      return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+    };
+    const saveFormState = () => sessionStorage.setItem(FORM_STATE_KEY, JSON.stringify(state.form));
+
+    function restoreFormState() {
+      const raw = sessionStorage.getItem(FORM_STATE_KEY);
+      if (!raw) return;
+      const saved = JSON.parse(raw);
+      state.form = { ...state.form, ...saved };
+      els.brandUrl.value = state.form.brandUrl || "";
+      els.magnetType.value = state.form.magnetType || "guide";
+      els.audience.value = state.form.audience || "";
+      els.goal.value = state.form.goal || "";
+      els.planOptions.forEach((opt) => { opt.checked = opt.value === state.form.plan; });
+      renderFormPreview();
+      renderResultPreview();
+      updateGenerateButtonLabel();
     }
 
-    function processPaymentQueryParams() {
+    async function processPaymentQueryParams() {
       const currentUrl = new URL(window.location.href);
       const paymentState = currentUrl.searchParams.get("payment");
+      const sessionId = currentUrl.searchParams.get("session_id");
 
-      if (paymentState === "success") {
-        state.isUnlocked = true;
-        sessionStorage.setItem(UNLOCK_KEY, "true");
-        setStatus("success", "Payment successful. Your session is unlocked—generate your lead magnet now.");
+      if (paymentState === "success" && sessionId) {
+        const response = await fetch(`/api/verify-session?session_id=${encodeURIComponent(sessionId)}`);
+        const result = await response.json();
+        if (!response.ok || !result.success) {
+          setStatus("idle", result.error || "Unable to verify subscription after checkout.");
+        } else {
+          state.subscription = { active: true, customerId: result.customerId, plan: result.plan };
+          sessionStorage.setItem(SUBSCRIPTION_KEY, JSON.stringify(state.subscription));
+          setStatus("success", `Subscription active on ${titleize(result.plan)}. Finishing generation...`);
+          restoreFormState();
+          if (sessionStorage.getItem(CHECKOUT_INTENT_KEY) === "pending") {
+            sessionStorage.removeItem(CHECKOUT_INTENT_KEY);
+            await handleGenerate();
+          }
+        }
+      } else if (paymentState === "cancelled") {
+        restoreFormState();
+        sessionStorage.removeItem(CHECKOUT_INTENT_KEY);
+        setStatus("idle", "Checkout was cancelled.");
       }
 
-      if (paymentState === "cancelled") {
-        setStatus("idle", "Payment was cancelled. Complete checkout to unlock generation.");
-      }
-
-      if (paymentState) {
+      if (paymentState || sessionId) {
         currentUrl.searchParams.delete("payment");
-        const cleanUrl = `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`;
-        window.history.replaceState({}, "", cleanUrl || "/");
+        currentUrl.searchParams.delete("session_id");
+        window.history.replaceState({}, "", `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}` || "/");
       }
+    }
 
-      updateGenerateButtonLabel();
+    function updateGenerateButtonLabel() {
+      els.generateBtn.textContent = PAID_PLANS.has(state.form.plan)
+        ? `Subscribe to ${titleize(state.form.plan)} & Generate`
+        : "Generate Lead Magnet";
     }
 
     function setView(view) {
       state.currentView = view;
-
       els.landingView.classList.add("hidden-view");
       els.dashboardView.classList.add("hidden-view");
       els.resultView.classList.add("hidden-view");
-
-      if (view === "landing") {
-        els.landingView.classList.remove("hidden-view");
-        els.landingView.classList.add("fade-in");
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      }
-
-      if (view === "dashboard") {
-        els.dashboardView.classList.remove("hidden-view");
-        els.dashboardView.classList.add("fade-in");
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      }
-
-      if (view === "result") {
-        els.resultView.classList.remove("hidden-view");
-        els.resultView.classList.add("fade-in");
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      }
+      const target = view === "landing" ? els.landingView : view === "dashboard" ? els.dashboardView : els.resultView;
+      target.classList.remove("hidden-view");
+      target.classList.add("fade-in");
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
     function syncStateFromForm() {
-      state.form.brandUrl = els.brandUrl.value.trim();
+      state.form.brandUrl = normalizeBrandUrl(els.brandUrl.value);
+      els.brandUrl.value = state.form.brandUrl;
       state.form.fileName = els.supportFile.files[0]?.name || "";
       state.form.magnetType = els.magnetType.value;
       state.form.audience = els.audience.value.trim();
       state.form.goal = els.goal.value.trim();
-
+      state.form.plan = document.querySelector('input[name="plan"]:checked')?.value || "free";
+      saveFormState();
       renderFormPreview();
+      updateGenerateButtonLabel();
     }
 
     function renderFormPreview() {
       els.previewBrandUrl.textContent = state.form.brandUrl || "—";
       els.previewFileName.textContent = state.form.fileName || "—";
-      els.previewMagnetType.textContent =
-        state.form.magnetType.charAt(0).toUpperCase() + state.form.magnetType.slice(1);
+      els.previewMagnetType.textContent = titleize(state.form.magnetType);
       els.previewAudience.textContent = state.form.audience || "—";
+      els.previewPlan.textContent = titleize(state.form.plan);
     }
 
     function renderResultPreview() {
       els.resultBrandUrl.textContent = state.form.brandUrl || "—";
-      els.resultMagnetType.textContent =
-        state.form.magnetType.charAt(0).toUpperCase() + state.form.magnetType.slice(1);
+      els.resultMagnetType.textContent = titleize(state.form.magnetType);
       els.resultAudience.textContent = state.form.audience || "—";
+      els.resultPlan.textContent = titleize(state.form.plan);
     }
 
     function setStatus(type, message) {
@@ -727,118 +783,80 @@
         generating: "border-brand-400/20 bg-brand-400/10 text-brand-200",
         success: "border-emerald-400/20 bg-emerald-400/10 text-emerald-300"
       };
-
-      const labels = {
-        idle: "Awaiting input",
-        ready: "Ready to generate",
-        generating: "Generating",
-        success: "Result prepared"
-      };
-
-      els.statusBadge.className =
-        "inline-flex rounded-full border px-3 py-1 text-xs font-medium " + badgeStyles[type];
-
+      const labels = { idle: "Awaiting input", ready: "Ready", generating: "Generating", success: "Done" };
+      els.statusBadge.className = "inline-flex rounded-full border px-3 py-1 text-xs font-medium " + badgeStyles[type];
       els.statusBadge.textContent = labels[type];
       els.statusText.textContent = message;
     }
 
-    function resetApp() {
-      state.form = {
-        brandUrl: "",
-        fileName: "",
-        magnetType: "guide",
-        audience: "",
-        goal: ""
-      };
-      state.generatedHtml = "";
-
-      els.leadForm.reset();
-      els.magnetType.value = "guide";
-
-      renderFormPreview();
-      renderResultPreview();
-      setStatus("idle", "Complete the fields and submit to prepare the generation payload.");
-      setView("landing");
-    }
-
-    function validateForm() {
-      const hasUrl = state.form.brandUrl.length > 0;
-      const hasAudience = state.form.audience.length > 0;
-      const hasGoal = state.form.goal.length > 0;
-      return hasUrl || hasAudience || hasGoal;
-    }
+    const validateForm = () => state.form.brandUrl || state.form.audience || state.form.goal;
 
     async function redirectToCheckout() {
-      setStatus("ready", "Payment required. Redirecting you to secure checkout...");
-
+      saveFormState();
+      sessionStorage.setItem(CHECKOUT_INTENT_KEY, "pending");
+      setStatus("ready", "Redirecting to secure subscription checkout...");
       const response = await fetch("/api/create-checkout-session", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({})
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan: state.form.plan })
       });
-
       const result = await response.json();
-
-      if (!response.ok || !result.url) {
-        throw new Error(result.error || "Could not start checkout.");
-      }
-
+      if (!response.ok || !result.url) throw new Error(result.error || "Could not start checkout.");
       window.location.href = result.url;
     }
 
     async function handleGenerate() {
       syncStateFromForm();
-
       if (!validateForm()) {
         setStatus("idle", "Add at least a URL, audience, or goal before generating.");
         return;
       }
 
-      if (!state.isUnlocked) {
+      const needsCheckout = PAID_PLANS.has(state.form.plan)
+        && !(state.subscription.active && state.subscription.plan === state.form.plan);
+      if (needsCheckout) {
         await redirectToCheckout();
         return;
       }
 
       try {
         setStatus("generating", "Generating lead magnet with AI...");
-
         const response = await fetch("/api/generate", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             brandUrl: state.form.brandUrl,
             audience: state.form.audience,
             goal: state.form.goal,
-            magnetType: state.form.magnetType
+            magnetType: state.form.magnetType,
+            plan: state.form.plan,
+            customerId: state.subscription.customerId || ""
           })
         });
-
         const result = await response.json();
-
-        if (!response.ok || !result.success) {
-          throw new Error(result.error || "Generation failed.");
-        }
-
+        if (!response.ok || !result.success) throw new Error(result.error || "Generation failed.");
         state.generatedHtml = result.html;
         renderResultPreview();
-
-        const generatedDocument = document.getElementById("generatedDocument");
-        generatedDocument.innerHTML = `
-          <div class="generated-html">
-            ${state.generatedHtml}
-          </div>
-        `;
-
+        document.getElementById("generatedDocument").innerHTML = `<div class="generated-html">${state.generatedHtml}</div>`;
         setStatus("success", "Lead magnet generated successfully.");
         setView("result");
       } catch (error) {
         setStatus("idle", error.message || "Something went wrong during generation.");
         alert(error.message || "Something went wrong during generation.");
       }
+    }
+
+    function resetApp() {
+      sessionStorage.removeItem(FORM_STATE_KEY);
+      sessionStorage.removeItem(CHECKOUT_INTENT_KEY);
+      state.form = { brandUrl: "", fileName: "", magnetType: "guide", audience: "", goal: "", plan: "free" };
+      els.leadForm.reset();
+      els.planOptions.forEach((opt) => { opt.checked = opt.value === "free"; });
+      renderFormPreview();
+      renderResultPreview();
+      updateGenerateButtonLabel();
+      setStatus("idle", "Complete the fields and submit to prepare the generation payload.");
+      setView("landing");
     }
 
     els.navGetStartedBtn.addEventListener("click", () => setView("dashboard"));
@@ -848,43 +866,21 @@
     els.startOverBtn.addEventListener("click", resetApp);
     els.demoResultBtn.addEventListener("click", handleGenerate);
 
-    ["input", "change"].forEach((eventName) => {
-      els.brandUrl.addEventListener(eventName, () => {
-        syncStateFromForm();
-        setStatus("ready", "Your inputs are being tracked locally and are ready for submission.");
-      });
-
-      els.supportFile.addEventListener(eventName, () => {
-        syncStateFromForm();
-        setStatus("ready", "Supporting file added to local UI state.");
-      });
-
-      els.magnetType.addEventListener(eventName, () => {
-        syncStateFromForm();
-        setStatus("ready", "Lead magnet format updated.");
-      });
-
-      els.audience.addEventListener(eventName, () => {
-        syncStateFromForm();
-        setStatus("ready", "Audience details updated.");
-      });
-
-      els.goal.addEventListener(eventName, () => {
-        syncStateFromForm();
-        setStatus("ready", "Primary goal updated.");
+    [els.brandUrl, els.supportFile, els.magnetType, els.audience, els.goal, ...els.planOptions].forEach((input) => {
+      ["input", "change"].forEach((eventName) => {
+        input.addEventListener(eventName, () => {
+          syncStateFromForm();
+          setStatus("ready", "Inputs saved locally and ready for generation.");
+        });
       });
     });
 
     els.leadForm.addEventListener("submit", async (event) => {
       event.preventDefault();
-      try {
-        await handleGenerate();
-      } catch (error) {
-        setStatus("idle", error.message || "Unable to continue checkout.");
-        alert(error.message || "Unable to continue checkout.");
-      }
+      await handleGenerate();
     });
 
+    restoreFormState();
     renderFormPreview();
     renderResultPreview();
     updateGenerateButtonLabel();

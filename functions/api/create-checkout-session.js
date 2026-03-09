@@ -1,5 +1,11 @@
 const STRIPE_API_URL = "https://api.stripe.com/v1/checkout/sessions";
 
+const PLAN_CONFIG = {
+  starter: { envKey: "STRIPE_PRICE_STARTER", label: "Starter" },
+  builder: { envKey: "STRIPE_PRICE_BUILDER", label: "Builder" },
+  founder: { envKey: "STRIPE_PRICE_FOUNDER", label: "Founder" }
+};
+
 function jsonResponse(payload, status = 200) {
   return new Response(JSON.stringify(payload), {
     status,
@@ -18,23 +24,31 @@ export async function onRequest(context) {
     const { request, env } = context;
     const body = await request.json().catch(() => ({}));
 
+    const selectedPlan = String(body?.plan || "").toLowerCase();
+    if (!PLAN_CONFIG[selectedPlan]) {
+      return jsonResponse({ success: false, error: "Please choose a paid plan." }, 400);
+    }
+
     const stripeSecretKey = env.STRIPE_SECRET_KEY;
     if (!stripeSecretKey) {
       return jsonResponse({ success: false, error: "Stripe is not configured" }, 500);
     }
 
-    const amount = Number.parseInt(env.STRIPE_PRICE_AMOUNT || "900", 10);
-    const currency = (env.STRIPE_CURRENCY || "usd").toLowerCase();
-    const siteUrl = env.SITE_URL || new URL(request.url).origin;
+    const priceId = env[PLAN_CONFIG[selectedPlan].envKey];
+    if (!priceId) {
+      return jsonResponse({ success: false, error: `Missing ${PLAN_CONFIG[selectedPlan].envKey}` }, 500);
+    }
 
+    const siteUrl = env.SITE_URL || new URL(request.url).origin;
     const formData = new URLSearchParams();
-    formData.set("mode", "payment");
-    formData.set("success_url", `${siteUrl}/?payment=success`);
+
+    formData.set("mode", "subscription");
+    formData.set("success_url", `${siteUrl}/?payment=success&session_id={CHECKOUT_SESSION_ID}`);
     formData.set("cancel_url", `${siteUrl}/?payment=cancelled`);
     formData.set("line_items[0][quantity]", "1");
-    formData.set("line_items[0][price_data][currency]", currency);
-    formData.set("line_items[0][price_data][unit_amount]", String(Number.isFinite(amount) ? amount : 900));
-    formData.set("line_items[0][price_data][product_data][name]", "Lead-Magnet Pro");
+    formData.set("line_items[0][price]", priceId);
+    formData.set("metadata[plan]", selectedPlan);
+    formData.set("subscription_data[metadata][plan]", selectedPlan);
 
     if (body && typeof body.email === "string" && body.email.trim()) {
       formData.set("customer_email", body.email.trim());
