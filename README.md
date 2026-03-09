@@ -1,121 +1,57 @@
 # Lead-Magnet Pro
 
-Lead-Magnet Pro is a high-margin Micro-SaaS that generates professional, conversion-focused lead magnets using AI.
+Lead-Magnet Pro is a Cloudflare Pages SaaS that generates premium lead magnets with OpenAI.
 
-Users can enter a brand URL or business description and instantly generate a polished lead magnet formatted as PDF-ready HTML.
+## What changed
 
-The goal of this project is to create a fast, serverless, scalable lead generation tool built on modern web infrastructure.
+The app now supports subscription plans instead of a one-time unlock:
 
----
+- Free
+- Starter — $9/month (20 generations/month)
+- Builder — $19/month (75 generations/month)
+- Founder — $39/month (200 generations/month)
 
-# Features
+## Architecture
 
-• AI-generated lead magnets  
-• PDF-ready formatted HTML output  
-• Serverless architecture  
-• Stripe Checkout payment gate  
-• Deploys automatically from GitHub  
+- **Frontend**: `index.html` (vanilla JS + Tailwind CDN)
+- **Checkout**: `functions/api/create-checkout-session.js` (Stripe subscription checkout)
+- **Session verification**: `functions/api/verify-session.js`
+- **Generation + limits**: `functions/api/generate.js`
+- **Database schema**: `db/schema.sql` (Cloudflare D1)
 
----
+## Environment variables
 
-# Tech Stack
+Set these in Cloudflare Pages:
 
-Frontend  
-• HTML5  
-• TailwindCSS (CDN)  
-• Vanilla ES6 JavaScript  
+- `OPENAI_API_KEY`
+- `STRIPE_SECRET_KEY`
+- `STRIPE_PRICE_STARTER`
+- `STRIPE_PRICE_BUILDER`
+- `STRIPE_PRICE_FOUNDER`
+- `SITE_URL` (optional; defaults to request origin)
 
-Backend  
-• Cloudflare Pages Functions  
+Also bind D1 to Pages Functions as `DB`.
 
-AI  
-• OpenAI API (GPT-4o)
+## D1 setup
 
-Payments  
-• Stripe Checkout
+Run the schema:
 
-Deployment  
-• Cloudflare Pages (GitHub integrated)
+```bash
+wrangler d1 execute <YOUR_DB_NAME> --file=db/schema.sql
+```
 
----
+## User flow
 
-# Project Architecture
+1. User fills form and selects a plan.
+2. If paid plan is selected, app stores form values in `sessionStorage` and redirects to Stripe Checkout.
+3. On success return, app verifies checkout session server-side and restores inputs.
+4. Generation resumes automatically.
+5. Paid plans are enforced against monthly generation limits in D1, and successful generations are saved.
 
-Lead-Magnet-Pro/
-│
-├── index.html
-├── package.json
-├── README.md
-├── .gitignore
-│
-├── functions/
-│   └── api/
-│       ├── generate.js
-│       └── create-checkout-session.js
-│
-└── public/
-└── assets/
+## Local dev
 
----
+```bash
+npm install
+npm run dev
+```
 
-# How It Works
-
-1. User enters a brand URL or description
-2. The frontend sends a request to `/api/generate`
-3. Cloudflare Pages Function calls the OpenAI API
-4. The AI returns structured HTML content
-5. The UI renders the generated lead magnet
-
----
-
-# Environment Variables
-
-This project requires the following environment variables inside Cloudflare Pages:
-
-OPENAI_API_KEY  
-STRIPE_SECRET_KEY  
-STRIPE_PRICE_AMOUNT (optional, defaults to 900 cents)  
-STRIPE_CURRENCY (optional, defaults to usd)  
-SITE_URL (optional, used for Stripe success/cancel redirects)
-
-Add it inside:
-
-Cloudflare Dashboard
-Pages → Lead-Magnet-Pro → Settings → Environment Variables
-
-Then redeploy the project.
-
----
-
-# Development Roadmap
-
-Phase 1  
-✔ Project architecture  
-✔ Landing page UI  
-✔ Dashboard interface  
-
-Phase 2  
-✔ Cloudflare Functions  
-✔ OpenAI integration  
-
-Phase 3  
-⬜ Stripe checkout integration  
-
-Phase 4  
-⬜ PDF export  
-⬜ Lead magnet templates  
-⬜ SaaS pricing model
-
----
-
-# Deployment
-
-The project automatically deploys via GitHub → Cloudflare Pages.
-
-Any commit to the `main` branch triggers a new deployment.
-
----
-
-# License
-
-MIT License
