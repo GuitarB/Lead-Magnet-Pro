@@ -351,7 +351,7 @@
               Generate your lead magnet
             </h2>
             <p class="mt-3 max-w-2xl text-slate-300">
-              Enter a brand URL, optionally upload a supporting file, and prepare the prompt payload for the generation API in Phase 2.
+              Enter a brand URL, optionally upload a supporting file, and generate polished lead magnets instantly.
             </p>
           </div>
 
@@ -362,6 +362,65 @@
             ← Back to Landing
           </button>
         </div>
+
+        <section class="glass mb-8 rounded-3xl p-5 sm:p-6">
+          <div class="mb-5 flex flex-col gap-2">
+            <p class="text-sm font-semibold uppercase tracking-[0.18em] text-brand-300">Workspace Access</p>
+            <h3 class="text-xl font-semibold text-white">Access your workspace</h3>
+            <p class="text-sm text-slate-300">Enter the email used at checkout to load plan usage and recent saved lead magnets.</p>
+          </div>
+          <div class="flex flex-col gap-3 sm:flex-row">
+            <input
+              id="workspaceEmail"
+              type="email"
+              placeholder="you@company.com"
+              class="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-slate-100 placeholder:text-slate-500 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+            />
+            <button
+              id="loadWorkspaceBtn"
+              type="button"
+              class="rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-200"
+            >
+              Load My Workspace
+            </button>
+          </div>
+          <p id="workspaceMessage" class="mt-3 text-sm text-slate-300"></p>
+
+          <div id="workspacePanel" class="mt-5 hidden rounded-2xl border border-white/10 bg-slate-950/50 p-4 sm:p-5">
+            <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <div class="rounded-2xl border border-white/10 bg-slate-950/70 p-3">
+                <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Current Plan</p>
+                <p id="workspacePlan" class="mt-2 text-sm font-semibold text-white">—</p>
+              </div>
+              <div class="rounded-2xl border border-white/10 bg-slate-950/70 p-3">
+                <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Subscription</p>
+                <p id="workspaceStatus" class="mt-2 text-sm font-semibold text-white">—</p>
+              </div>
+              <div class="rounded-2xl border border-white/10 bg-slate-950/70 p-3">
+                <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Used This Month</p>
+                <p id="workspaceUsage" class="mt-2 text-sm font-semibold text-white">—</p>
+              </div>
+              <div class="rounded-2xl border border-white/10 bg-slate-950/70 p-3">
+                <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Remaining</p>
+                <p id="workspaceRemaining" class="mt-2 text-sm font-semibold text-white">—</p>
+              </div>
+            </div>
+            <p id="workspaceBillingPeriod" class="mt-4 text-xs text-slate-400">Billing period: —</p>
+            <div class="mt-4">
+              <div class="mb-2 flex items-center justify-between gap-3">
+                <p class="text-sm font-semibold text-white">Recent Saved Generations</p>
+                <button
+                  id="manageBillingBtn"
+                  type="button"
+                  class="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-slate-200 transition hover:bg-white/10"
+                >
+                  Manage Billing
+                </button>
+              </div>
+              <div id="workspaceGenerations" class="space-y-2 text-sm text-slate-200"></div>
+            </div>
+          </div>
+        </section>
 
         <div class="grid gap-7 lg:grid-cols-[1.15fr_0.85fr] lg:gap-8">
           <!-- Main Form -->
@@ -485,13 +544,6 @@
                   Generate Lead Magnet
                 </button>
 
-                <button
-                  id="demoResultBtn"
-                  type="button"
-                  class="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-6 py-3 text-base font-semibold text-slate-200 transition hover:bg-white/10"
-                >
-                  Preview Result State
-                </button>
               </div>
               <p id="generateBtnHelper" class="mt-3 text-xs text-slate-400">
                 Free plan generates a preview instantly.
@@ -514,31 +566,6 @@
               </div>
             </div>
 
-            <div class="glass rounded-3xl p-6">
-              <p class="text-sm font-semibold text-white">Current Form State</p>
-              <div class="mt-4 space-y-3 text-sm text-slate-300">
-                <div class="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
-                  <span class="text-slate-400">Brand URL:</span>
-                  <p id="previewBrandUrl" class="mt-1 break-all text-slate-200">—</p>
-                </div>
-                <div class="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
-                  <span class="text-slate-400">File:</span>
-                  <p id="previewFileName" class="mt-1 text-slate-200">—</p>
-                </div>
-                <div class="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
-                  <span class="text-slate-400">Magnet Type:</span>
-                  <p id="previewMagnetType" class="mt-1 text-slate-200">Guide</p>
-                </div>
-                <div class="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
-                  <span class="text-slate-400">Audience:</span>
-                  <p id="previewAudience" class="mt-1 text-slate-200">—</p>
-                </div>
-                <div class="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
-                  <span class="text-slate-400">Plan:</span>
-                  <p id="previewPlan" class="mt-1 text-slate-200">Free</p>
-                </div>
-              </div>
-            </div>
           </aside>
         </div>
       </div>
@@ -556,7 +583,7 @@
               Lead magnet output
             </h2>
             <p class="mt-3 max-w-2xl text-slate-300">
-              This is the UI shell for the generated asset. In Phase 2, the content inside this panel will come from your Cloudflare Function and OpenAI call.
+              Review your generated lead magnet below. You can also load previous saved outputs from your workspace.
             </p>
           </div>
 
@@ -579,11 +606,11 @@
         <div class="glass rounded-3xl p-5 sm:p-7 md:p-8">
           <div class="mb-6 flex flex-col gap-4 border-b border-white/10 pb-6 md:flex-row md:items-center md:justify-between">
             <div>
-              <p class="text-sm font-semibold text-white">Generated HTML Preview</p>
-              <p class="mt-1 text-sm text-slate-400">Placeholder result for Phase 1</p>
+              <p class="text-sm font-semibold text-white">Generated Lead Magnet</p>
+              <p class="mt-1 text-sm text-slate-400">Ready to review, copy, and export.</p>
             </div>
             <div class="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-xs font-medium text-emerald-300">
-              Ready for API integration
+              Live output
             </div>
           </div>
 
@@ -618,20 +645,12 @@
           Your Professional Lead Magnet Will Appear Here
         </h1>
         <p class="mt-4 text-base leading-8 text-slate-700 md:text-lg">
-          This placeholder represents the PDF-ready HTML that your backend generates.
+          Your generated lead magnet appears here after submission.
         </p>
       </div>
     </div>
   </div>
 </div>
-
-              <div class="mt-8 rounded-2xl border border-dashed border-brand-400/30 bg-brand-500/5 p-6">
-                <p class="text-sm font-semibold text-brand-200">Next Phase Hook</p>
-                <p class="mt-2 text-sm leading-6 text-slate-300">
-                  In Phase 2, this section will be replaced with the HTML returned from
-                  <code class="rounded bg-slate-800 px-2 py-1 text-brand-200">/functions/api/generate.js</code>.
-                </p>
-              </div>
             </div>
           </div>
         </div>
@@ -643,13 +662,15 @@
     const FORM_STATE_KEY = "leadMagnetProFormState";
     const SUBSCRIPTION_KEY = "leadMagnetProSubscription";
     const CHECKOUT_INTENT_KEY = "leadMagnetProCheckoutIntent";
+    const WORKSPACE_EMAIL_KEY = "leadMagnetProWorkspaceEmail";
     const PAID_PLANS = new Set(["starter", "builder", "founder"]);
 
     const state = {
       currentView: "landing",
       subscription: readStoredSubscription(),
       form: { brandUrl: "", fileName: "", magnetType: "guide", audience: "", goal: "", plan: "free" },
-      generatedHtml: ""
+      generatedHtml: "",
+      workspace: null
     };
 
     const els = {
@@ -661,7 +682,6 @@
       backToLandingBtn: document.getElementById("backToLandingBtn"),
       editInputBtn: document.getElementById("editInputBtn"),
       startOverBtn: document.getElementById("startOverBtn"),
-      demoResultBtn: document.getElementById("demoResultBtn"),
       generateBtn: document.getElementById("generateBtn"),
       leadForm: document.getElementById("leadForm"),
       brandUrl: document.getElementById("brandUrl"),
@@ -672,22 +692,30 @@
       planOptions: document.querySelectorAll('input[name="plan"]'),
       statusBadge: document.getElementById("statusBadge"),
       statusText: document.getElementById("statusText"),
-      previewBrandUrl: document.getElementById("previewBrandUrl"),
-      previewFileName: document.getElementById("previewFileName"),
-      previewMagnetType: document.getElementById("previewMagnetType"),
-      previewAudience: document.getElementById("previewAudience"),
-      previewPlan: document.getElementById("previewPlan"),
       generateBtnHelper: document.getElementById("generateBtnHelper"),
       resultBrandUrl: document.getElementById("resultBrandUrl"),
       resultMagnetType: document.getElementById("resultMagnetType"),
       resultAudience: document.getElementById("resultAudience"),
-      resultPlan: document.getElementById("resultPlan")
+      resultPlan: document.getElementById("resultPlan"),
+      generatedDocument: document.getElementById("generatedDocument"),
+      workspaceEmail: document.getElementById("workspaceEmail"),
+      loadWorkspaceBtn: document.getElementById("loadWorkspaceBtn"),
+      workspaceMessage: document.getElementById("workspaceMessage"),
+      workspacePanel: document.getElementById("workspacePanel"),
+      workspacePlan: document.getElementById("workspacePlan"),
+      workspaceStatus: document.getElementById("workspaceStatus"),
+      workspaceUsage: document.getElementById("workspaceUsage"),
+      workspaceRemaining: document.getElementById("workspaceRemaining"),
+      workspaceBillingPeriod: document.getElementById("workspaceBillingPeriod"),
+      workspaceGenerations: document.getElementById("workspaceGenerations"),
+      manageBillingBtn: document.getElementById("manageBillingBtn")
     };
 
     function readStoredSubscription() {
       try { return JSON.parse(sessionStorage.getItem(SUBSCRIPTION_KEY) || "null") || { active: false, plan: "free", customerId: "" }; }
       catch { return { active: false, plan: "free", customerId: "" }; }
     }
+
     const titleize = (value) => value ? value.charAt(0).toUpperCase() + value.slice(1) : "Free";
     const normalizeBrandUrl = (value) => {
       const trimmed = value.trim();
@@ -706,7 +734,6 @@
       els.audience.value = state.form.audience || "";
       els.goal.value = state.form.goal || "";
       els.planOptions.forEach((opt) => { opt.checked = opt.value === state.form.plan; });
-      renderFormPreview();
       renderResultPreview();
       updateGenerateButtonLabel();
     }
@@ -724,6 +751,10 @@
         } else {
           state.subscription = { active: true, customerId: result.customerId, plan: result.plan };
           sessionStorage.setItem(SUBSCRIPTION_KEY, JSON.stringify(state.subscription));
+          if (result.customerEmail) {
+            localStorage.setItem(WORKSPACE_EMAIL_KEY, result.customerEmail);
+            els.workspaceEmail.value = result.customerEmail;
+          }
           setStatus("success", `Subscription active on ${titleize(result.plan)}. Finishing generation...`);
           restoreFormState();
           if (sessionStorage.getItem(CHECKOUT_INTENT_KEY) === "pending") {
@@ -746,9 +777,7 @@
 
     function updateGenerateButtonLabel() {
       const isPaid = PAID_PLANS.has(state.form.plan);
-      els.generateBtn.textContent = isPaid
-        ? `Continue to ${titleize(state.form.plan)} Checkout`
-        : "Generate Free Preview";
+      els.generateBtn.textContent = isPaid ? `Continue to ${titleize(state.form.plan)} Checkout` : "Generate Free Preview";
       els.generateBtnHelper.textContent = isPaid
         ? "Paid plans open secure Stripe checkout, then generate and save your lead magnets automatically."
         : "Free plan generates one preview instantly — no checkout needed.";
@@ -762,7 +791,7 @@
       const target = view === "landing" ? els.landingView : view === "dashboard" ? els.dashboardView : els.resultView;
       target.classList.remove("hidden-view");
       target.classList.add("fade-in");
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      setTimeout(() => target.classList.remove("fade-in"), 350);
     }
 
     function syncStateFromForm() {
@@ -774,16 +803,7 @@
       state.form.goal = els.goal.value.trim();
       state.form.plan = document.querySelector('input[name="plan"]:checked')?.value || "free";
       saveFormState();
-      renderFormPreview();
       updateGenerateButtonLabel();
-    }
-
-    function renderFormPreview() {
-      els.previewBrandUrl.textContent = state.form.brandUrl || "—";
-      els.previewFileName.textContent = state.form.fileName || "—";
-      els.previewMagnetType.textContent = titleize(state.form.magnetType);
-      els.previewAudience.textContent = state.form.audience || "—";
-      els.previewPlan.textContent = titleize(state.form.plan);
     }
 
     function renderResultPreview() {
@@ -804,6 +824,129 @@
       els.statusBadge.className = "inline-flex rounded-full border px-3 py-1 text-xs font-medium " + badgeStyles[type];
       els.statusBadge.textContent = labels[type];
       els.statusText.textContent = message;
+    }
+
+    function formatDate(value) {
+      if (!value) return "—";
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return "—";
+      return date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+    }
+
+    function renderWorkspace(data) {
+      state.workspace = data;
+      els.workspacePanel.classList.remove("hidden");
+      els.workspacePlan.textContent = titleize(data.plan);
+      els.workspaceStatus.textContent = titleize(data.subscriptionStatus || "inactive");
+      els.workspaceUsage.textContent = `${data.generationsUsed} / ${data.generationLimit}`;
+      els.workspaceRemaining.textContent = String(data.generationsRemaining);
+      els.workspaceBillingPeriod.textContent = `Billing period: ${formatDate(data.billingPeriodStart)} → ${formatDate(data.billingPeriodEnd)}`;
+
+      els.workspaceGenerations.innerHTML = "";
+      if (!data.recentGenerations.length) {
+        els.workspaceGenerations.innerHTML = '<p class="rounded-xl border border-white/10 bg-slate-950/70 p-3 text-xs text-slate-400">No saved generations yet.</p>';
+        return;
+      }
+
+      data.recentGenerations.forEach((generation) => {
+        const row = document.createElement("div");
+        row.className = "rounded-xl border border-white/10 bg-slate-950/70 p-3";
+        row.innerHTML = `
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p class="text-sm font-semibold text-white">${generation.brandUrl || "Untitled generation"}</p>
+              <p class="text-xs text-slate-400">${titleize(generation.magnetType || "guide")} • ${formatDate(generation.createdAt)}</p>
+            </div>
+            <button type="button" class="load-generation-btn rounded-xl bg-brand-600 px-3 py-2 text-xs font-semibold text-white hover:bg-brand-500">Load</button>
+          </div>
+        `;
+        row.querySelector(".load-generation-btn").addEventListener("click", () => loadSavedGeneration(generation));
+        els.workspaceGenerations.appendChild(row);
+      });
+    }
+
+    async function loadWorkspace(email, options = {}) {
+      const normalizedEmail = (email || "").trim().toLowerCase();
+      if (!normalizedEmail) {
+        if (!options.silent) {
+          els.workspaceMessage.textContent = "Enter your email address to load your workspace.";
+        }
+        return;
+      }
+
+      els.workspaceMessage.textContent = "Loading workspace...";
+      const response = await fetch(`/api/workspace?email=${encodeURIComponent(normalizedEmail)}`);
+      const result = await response.json();
+
+      if (response.status === 404) {
+        els.workspacePanel.classList.add("hidden");
+        els.workspaceMessage.textContent = "No workspace found for that email yet.";
+        return;
+      }
+
+      if (!response.ok || !result.success) throw new Error(result.error || "Unable to load workspace.");
+
+      localStorage.setItem(WORKSPACE_EMAIL_KEY, normalizedEmail);
+      els.workspaceEmail.value = normalizedEmail;
+      els.workspaceMessage.textContent = "Workspace loaded.";
+
+      state.subscription = {
+        active: ["active", "trialing"].includes(result.subscriptionStatus),
+        customerId: result.customerId,
+        plan: result.plan || "free"
+      };
+      sessionStorage.setItem(SUBSCRIPTION_KEY, JSON.stringify(state.subscription));
+
+      if (PAID_PLANS.has(result.plan)) {
+        state.form.plan = result.plan;
+        els.planOptions.forEach((opt) => { opt.checked = opt.value === result.plan; });
+        updateGenerateButtonLabel();
+      }
+
+      renderWorkspace(result);
+    }
+
+    function loadSavedGeneration(generation) {
+      state.form.brandUrl = generation.brandUrl || "";
+      state.form.magnetType = generation.magnetType || "guide";
+      state.form.plan = generation.plan || state.form.plan;
+      els.brandUrl.value = state.form.brandUrl;
+      els.magnetType.value = state.form.magnetType;
+      els.planOptions.forEach((opt) => { opt.checked = opt.value === state.form.plan; });
+      saveFormState();
+      renderResultPreview();
+      updateGenerateButtonLabel();
+
+      state.generatedHtml = generation.generatedHtml || "";
+      if (state.generatedHtml) {
+        els.generatedDocument.innerHTML = `<div class="generated-html">${state.generatedHtml}</div>`;
+        setView("result");
+      }
+    }
+
+    async function handleManageBilling() {
+      if (!state.workspace?.customerId) {
+        els.workspaceMessage.textContent = "Load a workspace before opening billing.";
+        return;
+      }
+
+      const response = await fetch("/api/manage-billing", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ customerId: state.workspace.customerId, email: els.workspaceEmail.value.trim() })
+      });
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        els.workspaceMessage.textContent = result.error || "Billing portal is not available yet.";
+        return;
+      }
+
+      if (result.url) {
+        window.open(result.url, "_blank", "noopener,noreferrer");
+      } else {
+        els.workspaceMessage.textContent = result.message || "Billing portal coming soon.";
+      }
     }
 
     const validateForm = () => state.form.brandUrl || state.form.audience || state.form.goal;
@@ -854,7 +997,7 @@
         if (!response.ok || !result.success) throw new Error(result.error || "Generation failed.");
         state.generatedHtml = result.html;
         renderResultPreview();
-        document.getElementById("generatedDocument").innerHTML = `<div class="generated-html">${state.generatedHtml}</div>`;
+        els.generatedDocument.innerHTML = `<div class="generated-html">${state.generatedHtml}</div>`;
         setStatus("success", "Lead magnet generated successfully.");
         setView("result");
       } catch (error) {
@@ -869,7 +1012,6 @@
       state.form = { brandUrl: "", fileName: "", magnetType: "guide", audience: "", goal: "", plan: "free" };
       els.leadForm.reset();
       els.planOptions.forEach((opt) => { opt.checked = opt.value === "free"; });
-      renderFormPreview();
       renderResultPreview();
       updateGenerateButtonLabel();
       setStatus("idle", "Complete the fields and submit to prepare the generation payload.");
@@ -881,7 +1023,6 @@
     els.backToLandingBtn.addEventListener("click", () => setView("landing"));
     els.editInputBtn.addEventListener("click", () => setView("dashboard"));
     els.startOverBtn.addEventListener("click", resetApp);
-    els.demoResultBtn.addEventListener("click", handleGenerate);
 
     [els.brandUrl, els.supportFile, els.magnetType, els.audience, els.goal, ...els.planOptions].forEach((input) => {
       ["input", "change"].forEach((eventName) => {
@@ -897,13 +1038,38 @@
       await handleGenerate();
     });
 
+    els.loadWorkspaceBtn.addEventListener("click", async () => {
+      try {
+        await loadWorkspace(els.workspaceEmail.value);
+      } catch (error) {
+        els.workspaceMessage.textContent = error.message || "Unable to load workspace.";
+      }
+    });
+
+    els.manageBillingBtn.addEventListener("click", async () => {
+      try {
+        await handleManageBilling();
+      } catch (error) {
+        els.workspaceMessage.textContent = error.message || "Unable to open billing settings.";
+      }
+    });
+
     restoreFormState();
-    renderFormPreview();
     renderResultPreview();
     updateGenerateButtonLabel();
     setStatus("idle", "Complete the fields and submit to prepare the generation payload.");
     processPaymentQueryParams();
+
+    const storedWorkspaceEmail = localStorage.getItem(WORKSPACE_EMAIL_KEY);
+    if (storedWorkspaceEmail) {
+      els.workspaceEmail.value = storedWorkspaceEmail;
+      loadWorkspace(storedWorkspaceEmail, { silent: true }).catch(() => {
+        els.workspaceMessage.textContent = "Stored workspace could not be restored.";
+      });
+    }
+
     setView("landing");
   </script>
+
 </body>
 </html>

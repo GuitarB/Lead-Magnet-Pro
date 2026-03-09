@@ -17,6 +17,8 @@ The app now supports subscription plans instead of a one-time unlock:
 - **Checkout**: `functions/api/create-checkout-session.js` (Stripe subscription checkout)
 - **Session verification**: `functions/api/verify-session.js`
 - **Generation + limits**: `functions/api/generate.js`
+- **Workspace lookup**: `functions/api/workspace.js`
+- **Billing portal placeholder**: `functions/api/manage-billing.js`
 - **Database schema**: `db/schema.sql` (Cloudflare D1)
 
 ## Environment variables
@@ -55,3 +57,10 @@ npm install
 npm run dev
 ```
 
+
+## Account-lite workspace access
+
+- Users can load a workspace by email (no password auth yet).
+- The dashboard shows plan, subscription status, billing window, usage, remaining generations, and recent saved generations.
+- Last loaded workspace email is persisted in `localStorage` and restored automatically.
+- Saved generations can be loaded back into the result panel from the workspace list.
