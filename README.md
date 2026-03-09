@@ -13,7 +13,7 @@ The goal of this project is to create a fast, serverless, scalable lead generati
 • AI-generated lead magnets  
 • PDF-ready formatted HTML output  
 • Serverless architecture  
-• Stripe payment integration (coming next)  
+• Stripe Checkout payment gate  
 • Deploys automatically from GitHub  
 
 ---
@@ -32,7 +32,7 @@ AI
 • OpenAI API (GPT-4o)
 
 Payments  
-• Stripe Checkout (planned)
+• Stripe Checkout
 
 Deployment  
 • Cloudflare Pages (GitHub integrated)
@@ -70,9 +70,13 @@ Lead-Magnet-Pro/
 
 # Environment Variables
 
-This project requires the following environment variable inside Cloudflare Pages:
+This project requires the following environment variables inside Cloudflare Pages:
 
-OPENAI_API_KEY
+OPENAI_API_KEY  
+STRIPE_SECRET_KEY  
+STRIPE_PRICE_AMOUNT (optional, defaults to 900 cents)  
+STRIPE_CURRENCY (optional, defaults to usd)  
+SITE_URL (optional, used for Stripe success/cancel redirects)
 
 Add it inside:
 
