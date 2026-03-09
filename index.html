@@ -643,30 +643,53 @@
       return hasUrl || hasAudience || hasGoal;
     }
 
-    function handleGenerate() {
-      syncStateFromForm();
+    async function handleGenerate() {
+  syncStateFromForm();
 
-      if (!validateForm()) {
-        setStatus("idle", "Add at least a URL, audience, or goal before generating.");
-        return;
-      }
+  if (!validateForm()) {
+    setStatus("idle", "Add at least a URL, audience, or goal before generating.");
+    return;
+  }
 
-      setStatus("generating", "UI shell complete. In Phase 2 this action will call your Cloudflare function.");
+  try {
+    setStatus("generating", "Generating lead magnet with AI...");
 
-      state.generatedHtml = `
-        <section>
-          <h1>${state.form.magnetType} for ${state.form.audience || "your audience"}</h1>
-          <p>Source: ${state.form.brandUrl || "No URL provided"}</p>
-        </section>
-      `.trim();
+    const response = await fetch("/api/generate", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        brandUrl: state.form.brandUrl,
+        audience: state.form.audience,
+        goal: state.form.goal,
+        magnetType: state.form.magnetType
+      })
+    });
 
-      renderResultPreview();
+    const result = await response.json();
 
-      setTimeout(() => {
-        setStatus("success", "Preview state updated successfully.");
-        setView("result");
-      }, 300);
+    if (!response.ok || !result.success) {
+      throw new Error(result.error || "Generation failed.");
     }
+
+    state.generatedHtml = result.html;
+    renderResultPreview();
+
+    const resultCard = document.getElementById("resultCard");
+    resultCard.innerHTML = `
+      <div class="rounded-3xl border border-white/10 bg-slate-950/70 p-8">
+        ${state.generatedHtml}
+      </div>
+    `;
+
+    setStatus("success", "Lead magnet generated successfully.");
+    setView("result");
+  } catch (error) {
+    setStatus("idle", error.message || "Something went wrong during generation.");
+    alert(error.message || "Something went wrong during generation.");
+  }
+}
 
     els.navGetStartedBtn.addEventListener("click", () => setView("dashboard"));
     els.heroStartBtn.addEventListener("click", () => setView("dashboard"));
