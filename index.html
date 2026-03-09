@@ -85,27 +85,27 @@
   font-size: 2rem;
   line-height: 1.15;
   font-weight: 800;
-  margin: 0 0 1rem;
+  margin: 0 0 1.15rem;
 }
 
 .generated-html h2 {
   font-size: 1.5rem;
   line-height: 1.25;
   font-weight: 700;
-  margin: 2rem 0 0.75rem;
+  margin: 2.1rem 0 0.9rem;
 }
 
 .generated-html h3 {
   font-size: 1.125rem;
   line-height: 1.35;
   font-weight: 700;
-  margin: 1.5rem 0 0.5rem;
+  margin: 1.6rem 0 0.6rem;
 }
 
 .generated-html p {
   font-size: 1rem;
-  line-height: 1.8;
-  margin: 0 0 1rem;
+  line-height: 1.85;
+  margin: 0 0 1.2rem;
   color: #334155;
 }
 
@@ -117,7 +117,7 @@
 }
 
 .generated-html li {
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.8rem;
   line-height: 1.7;
 }
 
@@ -136,11 +136,11 @@
 
 @media (max-width: 640px) {
   .generated-html h1 {
-    font-size: 1.65rem;
+    font-size: 1.75rem;
   }
 
   .generated-html h2 {
-    font-size: 1.3rem;
+    font-size: 1.35rem;
   }
 
   .generated-html h3 {
@@ -150,7 +150,7 @@
   .generated-html p,
   .generated-html li {
     font-size: 1rem;
-    line-height: 1.75;
+    line-height: 1.85;
   }
 }
   </style>
@@ -158,7 +158,7 @@
 <body class="text-slate-100 antialiased">
   <!-- Top Nav -->
   <header class="sticky top-0 z-40 border-b border-white/10 bg-slate-950/70 backdrop-blur">
-    <div class="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+    <div class="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 sm:py-4">
       <a href="#" class="flex items-center gap-3">
         <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-600 font-bold shadow-glow">
           LM
@@ -176,7 +176,7 @@
 
       <button
         id="navGetStartedBtn"
-        class="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-slate-200"
+        class="rounded-xl bg-white px-3.5 py-2 text-sm font-semibold text-slate-950 transition hover:bg-slate-200 sm:px-4"
       >
         Get Started
       </button>
@@ -341,8 +341,8 @@
 
     <!-- DASHBOARD VIEW -->
     <section id="dashboardView" class="hidden-view">
-      <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 md:py-16">
-        <div class="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+      <div class="mx-auto max-w-7xl px-4 py-10 sm:px-6 md:py-16">
+        <div class="mb-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
             <p class="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-brand-300">
               Input Dashboard
@@ -363,10 +363,10 @@
           </button>
         </div>
 
-        <div class="grid gap-6 lg:grid-cols-[1.15fr_0.85fr] lg:gap-8">
+        <div class="grid gap-7 lg:grid-cols-[1.15fr_0.85fr] lg:gap-8">
           <!-- Main Form -->
-          <div class="glass rounded-3xl p-4 sm:p-6 md:p-8">
-            <form id="leadForm" class="space-y-6">
+          <div class="glass rounded-3xl p-5 sm:p-7 md:p-8">
+            <form id="leadForm" class="space-y-7">
               <div>
                 <label for="brandUrl" class="mb-2 block text-sm font-medium text-slate-200">
                   Brand URL
@@ -375,36 +375,43 @@
                   id="brandUrl"
                   name="brandUrl"
                   type="url"
-                  placeholder="https://yourbrand.com"
+                  placeholder="yourbrand.com"
                   class="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-slate-100 placeholder:text-slate-500 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
                 />
                 <p class="mt-2 text-xs text-slate-400">
-                  Example: company homepage, product page, or about page
+                  Paste domain.com, www.domain.com, or a full URL — we normalize it automatically.
                 </p>
               </div>
 
               <div>
                 <p class="mb-3 block text-sm font-medium text-slate-200">Select Plan</p>
+                <p class="mb-4 text-xs text-slate-400">
+                  Free gives one preview; paid plans unlock monthly generations and saved history.
+                </p>
                 <div class="grid gap-3 sm:grid-cols-2">
-                  <label class="rounded-2xl border border-white/10 bg-slate-950/80 p-4 text-sm text-slate-200 transition hover:border-brand-400/60">
-                    <input type="radio" name="plan" value="free" class="mr-2" checked />
-                    <span class="font-semibold">Free</span>
-                    <span class="block text-xs text-slate-400">No checkout required</span>
+                  <label class="group rounded-2xl border border-white/10 bg-slate-950/70 p-4 text-sm text-slate-200 transition hover:border-brand-400/60 hover:bg-slate-900/80">
+                    <input type="radio" name="plan" value="free" class="h-4 w-4 accent-brand-500" checked />
+                    <span class="mt-3 block text-base font-semibold text-white">Free</span>
+                    <span class="mt-1 block text-xs uppercase tracking-[0.2em] text-slate-500">Preview</span>
+                    <span class="mt-2 block text-xs text-slate-400">One generated preview, no checkout required.</span>
                   </label>
-                  <label class="rounded-2xl border border-white/10 bg-slate-950/80 p-4 text-sm text-slate-200 transition hover:border-brand-400/60">
-                    <input type="radio" name="plan" value="starter" class="mr-2" />
-                    <span class="font-semibold">Starter — $9/mo</span>
-                    <span class="block text-xs text-slate-400">20 generations / month</span>
+                  <label class="group rounded-2xl border border-white/10 bg-slate-950/70 p-4 text-sm text-slate-200 transition hover:border-brand-400/60 hover:bg-slate-900/80">
+                    <input type="radio" name="plan" value="starter" class="h-4 w-4 accent-brand-500" />
+                    <span class="mt-3 block text-base font-semibold text-white">Starter</span>
+                    <span class="mt-1 block text-xs uppercase tracking-[0.2em] text-slate-500">$9/mo</span>
+                    <span class="mt-2 block text-xs text-slate-400">20 generations / month + saved history.</span>
                   </label>
-                  <label class="rounded-2xl border border-white/10 bg-slate-950/80 p-4 text-sm text-slate-200 transition hover:border-brand-400/60">
-                    <input type="radio" name="plan" value="builder" class="mr-2" />
-                    <span class="font-semibold">Builder — $19/mo</span>
-                    <span class="block text-xs text-slate-400">75 generations / month</span>
+                  <label class="group rounded-2xl border border-white/10 bg-slate-950/70 p-4 text-sm text-slate-200 transition hover:border-brand-400/60 hover:bg-slate-900/80">
+                    <input type="radio" name="plan" value="builder" class="h-4 w-4 accent-brand-500" />
+                    <span class="mt-3 block text-base font-semibold text-white">Builder</span>
+                    <span class="mt-1 block text-xs uppercase tracking-[0.2em] text-slate-500">$19/mo</span>
+                    <span class="mt-2 block text-xs text-slate-400">75 generations / month + saved history.</span>
                   </label>
-                  <label class="rounded-2xl border border-white/10 bg-slate-950/80 p-4 text-sm text-slate-200 transition hover:border-brand-400/60">
-                    <input type="radio" name="plan" value="founder" class="mr-2" />
-                    <span class="font-semibold">Founder — $39/mo</span>
-                    <span class="block text-xs text-slate-400">200 generations / month</span>
+                  <label class="group rounded-2xl border border-white/10 bg-slate-950/70 p-4 text-sm text-slate-200 transition hover:border-brand-400/60 hover:bg-slate-900/80">
+                    <input type="radio" name="plan" value="founder" class="h-4 w-4 accent-brand-500" />
+                    <span class="mt-3 block text-base font-semibold text-white">Founder</span>
+                    <span class="mt-1 block text-xs uppercase tracking-[0.2em] text-slate-500">$39/mo</span>
+                    <span class="mt-2 block text-xs text-slate-400">200 generations / month + saved history.</span>
                   </label>
                 </div>
               </div>
@@ -468,6 +475,7 @@
                 ></textarea>
               </div>
 
+              <div>
               <div class="flex flex-col gap-4 sm:flex-row">
                 <button
                   id="generateBtn"
@@ -484,6 +492,10 @@
                 >
                   Preview Result State
                 </button>
+              </div>
+              <p id="generateBtnHelper" class="mt-3 text-xs text-slate-400">
+                Free plan generates a preview instantly.
+              </p>
               </div>
             </form>
           </div>
@@ -534,8 +546,8 @@
 
     <!-- RESULT VIEW -->
     <section id="resultView" class="hidden-view">
-      <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 md:py-16">
-        <div class="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+      <div class="mx-auto max-w-7xl px-4 py-10 sm:px-6 md:py-16">
+        <div class="mb-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
             <p class="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-brand-300">
               Result
@@ -564,7 +576,7 @@
           </div>
         </div>
 
-        <div class="glass rounded-3xl p-4 sm:p-6 md:p-8">
+        <div class="glass rounded-3xl p-5 sm:p-7 md:p-8">
           <div class="mb-6 flex flex-col gap-4 border-b border-white/10 pb-6 md:flex-row md:items-center md:justify-between">
             <div>
               <p class="text-sm font-semibold text-white">Generated HTML Preview</p>
@@ -575,30 +587,30 @@
             </div>
           </div>
 
-         <div id="resultCard" class="rounded-3xl border border-white/10 bg-slate-950/70 p-4 md:p-6">
-  <div class="mb-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-    <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+         <div id="resultCard" class="rounded-3xl border border-white/10 bg-gradient-to-b from-slate-950/45 to-slate-950/20 p-3 sm:p-4 md:p-5">
+  <div class="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <div class="rounded-2xl border border-white/10 bg-slate-900/40 p-3">
       <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Source URL</p>
       <p id="resultBrandUrl" class="mt-2 break-all text-sm text-slate-200">—</p>
     </div>
-    <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+    <div class="rounded-2xl border border-white/10 bg-slate-900/40 p-3">
       <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Format</p>
       <p id="resultMagnetType" class="mt-2 text-sm text-slate-200">—</p>
     </div>
-    <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+    <div class="rounded-2xl border border-white/10 bg-slate-900/40 p-3">
       <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Audience</p>
       <p id="resultAudience" class="mt-2 text-sm text-slate-200">—</p>
     </div>
-    <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+    <div class="rounded-2xl border border-white/10 bg-slate-900/40 p-3">
       <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Plan</p>
       <p id="resultPlan" class="mt-2 text-sm text-slate-200">Free</p>
     </div>
   </div>
 
-  <div class="rounded-3xl border border-white/10 bg-slate-900/80 p-3 md:p-6">
+  <div class="p-1 sm:p-2 md:p-3">
     <div
       id="generatedDocument"
-      class="mx-auto w-full max-w-4xl rounded-2xl bg-white px-5 py-8 text-slate-900 shadow-2xl md:px-10 md:py-12"
+      class="mx-auto w-full max-w-5xl rounded-2xl bg-white px-4 py-7 text-slate-900 shadow-2xl sm:px-6 sm:py-9 md:px-10 md:py-12"
     >
       <div class="prose-shell">
         <p class="text-sm uppercase tracking-[0.25em] text-brand-700">Sample Lead Magnet</p>
@@ -665,6 +677,7 @@
       previewMagnetType: document.getElementById("previewMagnetType"),
       previewAudience: document.getElementById("previewAudience"),
       previewPlan: document.getElementById("previewPlan"),
+      generateBtnHelper: document.getElementById("generateBtnHelper"),
       resultBrandUrl: document.getElementById("resultBrandUrl"),
       resultMagnetType: document.getElementById("resultMagnetType"),
       resultAudience: document.getElementById("resultAudience"),
@@ -732,9 +745,13 @@
     }
 
     function updateGenerateButtonLabel() {
-      els.generateBtn.textContent = PAID_PLANS.has(state.form.plan)
-        ? `Subscribe to ${titleize(state.form.plan)} & Generate`
-        : "Generate Lead Magnet";
+      const isPaid = PAID_PLANS.has(state.form.plan);
+      els.generateBtn.textContent = isPaid
+        ? `Continue to ${titleize(state.form.plan)} Checkout`
+        : "Generate Free Preview";
+      els.generateBtnHelper.textContent = isPaid
+        ? "Paid plans open secure Stripe checkout, then generate and save your lead magnets automatically."
+        : "Free plan generates one preview instantly — no checkout needed.";
     }
 
     function setView(view) {
