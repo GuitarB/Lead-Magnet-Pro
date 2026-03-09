@@ -770,12 +770,12 @@
     state.generatedHtml = result.html;
     renderResultPreview();
 
-    const resultCard = document.getElementById("resultCard");
-    resultCard.innerHTML = `
-      <div class="rounded-3xl border border-white/10 bg-slate-950/70 p-8">
-        ${state.generatedHtml}
-      </div>
-    `;
+    const generatedDocument = document.getElementById("generatedDocument");
+generatedDocument.innerHTML = `
+  <div class="generated-html">
+    ${state.generatedHtml}
+  </div>
+`;
 
     setStatus("success", "Lead magnet generated successfully.");
     setView("result");
