@@ -59,6 +59,11 @@ The output must:
 - Include a short conclusion
 - Include a CTA section
 - Use simple inline-safe HTML structure that can later be styled or exported to PDF
+- Use short paragraphs
+- Use clear section headings
+- Use bullet points where useful
+- Keep paragraphs concise and readable on mobile
+- Avoid overly long blocks of text
 - Not include markdown fences
 - Not include explanations before or after the HTML
 - Return only HTML markup
