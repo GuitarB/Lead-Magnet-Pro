@@ -64,9 +64,11 @@ The output must:
 - Use bullet points where useful
 - Keep paragraphs concise and readable on mobile
 - Avoid overly long blocks of text
-- Not include markdown fences
+- Return raw HTML only
+- Do not return markdown
+- Do not wrap the response in fenced code blocks
+- Do not wrap the output in backticks
 - Not include explanations before or after the HTML
-- Return only HTML markup
 
 The HTML should generally use:
 <section>, <div>, <h1>, <h2>, <h3>, <p>, <ul>, <li>, <strong>
