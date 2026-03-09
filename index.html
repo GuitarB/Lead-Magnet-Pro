@@ -594,8 +594,11 @@
   </main>
 
   <script>
+    const UNLOCK_KEY = "leadMagnetProUnlocked";
+
     const state = {
       currentView: "landing",
+      isUnlocked: sessionStorage.getItem(UNLOCK_KEY) === "true",
       form: {
         brandUrl: "",
         fileName: "",
@@ -617,6 +620,7 @@
       editInputBtn: document.getElementById("editInputBtn"),
       startOverBtn: document.getElementById("startOverBtn"),
       demoResultBtn: document.getElementById("demoResultBtn"),
+      generateBtn: document.getElementById("generateBtn"),
 
       leadForm: document.getElementById("leadForm"),
       brandUrl: document.getElementById("brandUrl"),
@@ -637,6 +641,33 @@
       resultMagnetType: document.getElementById("resultMagnetType"),
       resultAudience: document.getElementById("resultAudience")
     };
+
+    function updateGenerateButtonLabel() {
+      els.generateBtn.textContent = state.isUnlocked ? "Generate Lead Magnet" : "Unlock & Generate";
+    }
+
+    function processPaymentQueryParams() {
+      const currentUrl = new URL(window.location.href);
+      const paymentState = currentUrl.searchParams.get("payment");
+
+      if (paymentState === "success") {
+        state.isUnlocked = true;
+        sessionStorage.setItem(UNLOCK_KEY, "true");
+        setStatus("success", "Payment successful. Your session is unlocked—generate your lead magnet now.");
+      }
+
+      if (paymentState === "cancelled") {
+        setStatus("idle", "Payment was cancelled. Complete checkout to unlock generation.");
+      }
+
+      if (paymentState) {
+        currentUrl.searchParams.delete("payment");
+        const cleanUrl = `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`;
+        window.history.replaceState({}, "", cleanUrl || "/");
+      }
+
+      updateGenerateButtonLabel();
+    }
 
     function setView(view) {
       state.currentView = view;
@@ -737,53 +768,78 @@
       return hasUrl || hasAudience || hasGoal;
     }
 
-    async function handleGenerate() {
-  syncStateFromForm();
+    async function redirectToCheckout() {
+      setStatus("ready", "Payment required. Redirecting you to secure checkout...");
 
-  if (!validateForm()) {
-    setStatus("idle", "Add at least a URL, audience, or goal before generating.");
-    return;
-  }
+      const response = await fetch("/api/create-checkout-session", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({})
+      });
 
-  try {
-    setStatus("generating", "Generating lead magnet with AI...");
+      const result = await response.json();
 
-    const response = await fetch("/api/generate", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        brandUrl: state.form.brandUrl,
-        audience: state.form.audience,
-        goal: state.form.goal,
-        magnetType: state.form.magnetType
-      })
-    });
+      if (!response.ok || !result.url) {
+        throw new Error(result.error || "Could not start checkout.");
+      }
 
-    const result = await response.json();
-
-    if (!response.ok || !result.success) {
-      throw new Error(result.error || "Generation failed.");
+      window.location.href = result.url;
     }
 
-    state.generatedHtml = result.html;
-    renderResultPreview();
+    async function handleGenerate() {
+      syncStateFromForm();
 
-    const generatedDocument = document.getElementById("generatedDocument");
-generatedDocument.innerHTML = `
-  <div class="generated-html">
-    ${state.generatedHtml}
-  </div>
-`;
+      if (!validateForm()) {
+        setStatus("idle", "Add at least a URL, audience, or goal before generating.");
+        return;
+      }
 
-    setStatus("success", "Lead magnet generated successfully.");
-    setView("result");
-  } catch (error) {
-    setStatus("idle", error.message || "Something went wrong during generation.");
-    alert(error.message || "Something went wrong during generation.");
-  }
-}
+      if (!state.isUnlocked) {
+        await redirectToCheckout();
+        return;
+      }
+
+      try {
+        setStatus("generating", "Generating lead magnet with AI...");
+
+        const response = await fetch("/api/generate", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            brandUrl: state.form.brandUrl,
+            audience: state.form.audience,
+            goal: state.form.goal,
+            magnetType: state.form.magnetType
+          })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+          throw new Error(result.error || "Generation failed.");
+        }
+
+        state.generatedHtml = result.html;
+        renderResultPreview();
+
+        const generatedDocument = document.getElementById("generatedDocument");
+        generatedDocument.innerHTML = `
+          <div class="generated-html">
+            ${state.generatedHtml}
+          </div>
+        `;
+
+        setStatus("success", "Lead magnet generated successfully.");
+        setView("result");
+      } catch (error) {
+        setStatus("idle", error.message || "Something went wrong during generation.");
+        alert(error.message || "Something went wrong during generation.");
+      }
+    }
 
     els.navGetStartedBtn.addEventListener("click", () => setView("dashboard"));
     els.heroStartBtn.addEventListener("click", () => setView("dashboard"));
@@ -819,14 +875,21 @@ generatedDocument.innerHTML = `
       });
     });
 
-    els.leadForm.addEventListener("submit", (event) => {
+    els.leadForm.addEventListener("submit", async (event) => {
       event.preventDefault();
-      handleGenerate();
+      try {
+        await handleGenerate();
+      } catch (error) {
+        setStatus("idle", error.message || "Unable to continue checkout.");
+        alert(error.message || "Unable to continue checkout.");
+      }
     });
 
     renderFormPreview();
     renderResultPreview();
+    updateGenerateButtonLabel();
     setStatus("idle", "Complete the fields and submit to prepare the generation payload.");
+    processPaymentQueryParams();
     setView("landing");
   </script>
 </body>
