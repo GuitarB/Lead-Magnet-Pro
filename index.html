@@ -460,30 +460,39 @@
             </div>
           </div>
 
-          <div id="resultCard" class="rounded-3xl border border-white/10 bg-slate-950/70 p-8">
-            <div class="mx-auto max-w-3xl">
-              <p class="text-sm uppercase tracking-[0.25em] text-brand-300">Sample Lead Magnet</p>
-              <h1 class="mt-4 text-4xl font-bold tracking-tight text-white">
-                Your Professional Lead Magnet Will Appear Here
-              </h1>
-              <p class="mt-4 text-lg leading-8 text-slate-300">
-                This placeholder represents the PDF-ready HTML that your backend will generate once the OpenAI integration is connected.
-              </p>
+         <div id="resultCard" class="rounded-3xl border border-white/10 bg-slate-950/70 p-4 md:p-6">
+  <div class="mb-6 grid gap-4 md:grid-cols-3">
+    <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+      <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Source URL</p>
+      <p id="resultBrandUrl" class="mt-2 break-all text-sm text-slate-200">—</p>
+    </div>
+    <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+      <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Format</p>
+      <p id="resultMagnetType" class="mt-2 text-sm text-slate-200">—</p>
+    </div>
+    <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+      <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Audience</p>
+      <p id="resultAudience" class="mt-2 text-sm text-slate-200">—</p>
+    </div>
+  </div>
 
-              <div class="mt-8 grid gap-4 md:grid-cols-3">
-                <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
-                  <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Source URL</p>
-                  <p id="resultBrandUrl" class="mt-2 break-all text-sm text-slate-200">—</p>
-                </div>
-                <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
-                  <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Format</p>
-                  <p id="resultMagnetType" class="mt-2 text-sm text-slate-200">—</p>
-                </div>
-                <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
-                  <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Audience</p>
-                  <p id="resultAudience" class="mt-2 text-sm text-slate-200">—</p>
-                </div>
-              </div>
+  <div class="rounded-3xl border border-white/10 bg-slate-900/80 p-3 md:p-6">
+    <div
+      id="generatedDocument"
+      class="mx-auto w-full max-w-4xl rounded-2xl bg-white px-5 py-8 text-slate-900 shadow-2xl md:px-10 md:py-12"
+    >
+      <div class="prose-shell">
+        <p class="text-sm uppercase tracking-[0.25em] text-brand-700">Sample Lead Magnet</p>
+        <h1 class="mt-4 text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">
+          Your Professional Lead Magnet Will Appear Here
+        </h1>
+        <p class="mt-4 text-base leading-8 text-slate-700 md:text-lg">
+          This placeholder represents the PDF-ready HTML that your backend generates.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
 
               <div class="mt-8 rounded-2xl border border-dashed border-brand-400/30 bg-brand-500/5 p-6">
                 <p class="text-sm font-semibold text-brand-200">Next Phase Hook</p>
