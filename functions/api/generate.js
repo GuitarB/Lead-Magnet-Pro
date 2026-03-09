@@ -52,6 +52,10 @@ The output must:
 - Feel premium, polished, and authoritative
 - Be tailored to the user's business context
 - Be formatted as clean semantic HTML only
+- Return raw HTML only (no markdown)
+- Never include markdown code fences
+- Never include ```html
+- Never include backticks around any part of the output
 - Include a strong headline
 - Include a compelling subheadline
 - Include an introduction
@@ -64,9 +68,9 @@ The output must:
 - Use bullet points where useful
 - Keep paragraphs concise and readable on mobile
 - Avoid overly long blocks of text
-- Not include markdown fences
 - Not include explanations before or after the HTML
 - Return only HTML markup
+- Keep structure concise and readable
 
 The HTML should generally use:
 <section>, <div>, <h1>, <h2>, <h3>, <p>, <ul>, <li>, <strong>

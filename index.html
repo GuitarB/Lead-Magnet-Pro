@@ -69,8 +69,7 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
-    .prose-shell,
-.generated-html {
+    .generated-html {
   width: 100%;
   max-width: 100%;
   color: #0f172a;
@@ -514,7 +513,7 @@
               Lead magnet output
             </h2>
             <p class="mt-3 max-w-2xl text-slate-300">
-              This is the UI shell for the generated asset. In Phase 2, the content inside this panel will come from your Cloudflare Function and OpenAI call.
+              Review your generated document below. It is formatted for a polished, readable lead magnet preview.
             </p>
           </div>
 
@@ -535,16 +534,6 @@
         </div>
 
         <div class="glass rounded-3xl p-6 md:p-8">
-          <div class="mb-6 flex flex-col gap-4 border-b border-white/10 pb-6 md:flex-row md:items-center md:justify-between">
-            <div>
-              <p class="text-sm font-semibold text-white">Generated HTML Preview</p>
-              <p class="mt-1 text-sm text-slate-400">Placeholder result for Phase 1</p>
-            </div>
-            <div class="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-xs font-medium text-emerald-300">
-              Ready for API integration
-            </div>
-          </div>
-
          <div id="resultCard" class="rounded-3xl border border-white/10 bg-slate-950/70 p-4 md:p-6">
   <div class="mb-6 grid gap-4 md:grid-cols-3">
     <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
@@ -561,31 +550,18 @@
     </div>
   </div>
 
-  <div class="rounded-3xl border border-white/10 bg-slate-900/80 p-3 md:p-6">
-    <div
-      id="generatedDocument"
-      class="mx-auto w-full max-w-4xl rounded-2xl bg-white px-5 py-8 text-slate-900 shadow-2xl md:px-10 md:py-12"
-    >
-      <div class="prose-shell">
-        <p class="text-sm uppercase tracking-[0.25em] text-brand-700">Sample Lead Magnet</p>
-        <h1 class="mt-4 text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">
-          Your Professional Lead Magnet Will Appear Here
-        </h1>
-        <p class="mt-4 text-base leading-8 text-slate-700 md:text-lg">
-          This placeholder represents the PDF-ready HTML that your backend generates.
-        </p>
-      </div>
+  <div
+    id="generatedDocument"
+    class="mx-auto w-full max-w-4xl rounded-2xl bg-white px-5 py-8 text-slate-900 shadow-2xl md:px-10 md:py-12"
+  >
+    <div class="generated-html">
+      <p class="text-sm uppercase tracking-[0.25em] text-brand-700">Lead Magnet Preview</p>
+      <h1 class="mt-4 text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">
+        Your generated lead magnet will appear here
+      </h1>
     </div>
   </div>
 </div>
-
-              <div class="mt-8 rounded-2xl border border-dashed border-brand-400/30 bg-brand-500/5 p-6">
-                <p class="text-sm font-semibold text-brand-200">Next Phase Hook</p>
-                <p class="mt-2 text-sm leading-6 text-slate-300">
-                  In Phase 2, this section will be replaced with the HTML returned from
-                  <code class="rounded bg-slate-800 px-2 py-1 text-brand-200">/functions/api/generate.js</code>.
-                </p>
-              </div>
             </div>
           </div>
         </div>
@@ -768,6 +744,19 @@
       return hasUrl || hasAudience || hasGoal;
     }
 
+    function sanitizeGeneratedHtml(html) {
+      if (!html || typeof html !== "string") {
+        return "";
+      }
+
+      return html
+        .replace(/^\s*```(?:html)?\s*\n?/i, "")
+        .replace(/\n?\s*```\s*$/i, "")
+        .replace(/^\s*`{1,3}\s*/i, "")
+        .replace(/\s*`{1,3}\s*$/i, "")
+        .trim();
+    }
+
     async function redirectToCheckout() {
       setStatus("ready", "Payment required. Redirecting you to secure checkout...");
 
@@ -823,7 +812,7 @@
           throw new Error(result.error || "Generation failed.");
         }
 
-        state.generatedHtml = result.html;
+        state.generatedHtml = sanitizeGeneratedHtml(result.html);
         renderResultPreview();
 
         const generatedDocument = document.getElementById("generatedDocument");
