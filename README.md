@@ -19,6 +19,8 @@ The app now supports subscription plans instead of a one-time unlock:
 - **Generation + limits**: `functions/api/generate.js`
 - **Workspace lookup**: `functions/api/workspace.js`
 - **Billing portal placeholder**: `functions/api/manage-billing.js`
+- **PDF rendering**: `functions/api/render-pdf.js` (Cloudflare Browser Rendering REST API)
+- **PDF retrieval**: `functions/api/pdf.js` (R2-backed inline/download endpoint)
 - **Database schema**: `db/schema.sql` (Cloudflare D1)
 
 ## Environment variables
@@ -31,8 +33,10 @@ Set these in Cloudflare Pages:
 - `STRIPE_PRICE_BUILDER`
 - `STRIPE_PRICE_FOUNDER`
 - `SITE_URL` (optional; defaults to request origin)
+- `CLOUDFLARE_ACCOUNT_ID`
+- `CLOUDFLARE_API_TOKEN`
 
-Also bind D1 to Pages Functions as `DB`.
+Also bind D1 to Pages Functions as `DB` and R2 as `PDF_BUCKET`.
 
 ## D1 setup
 
@@ -68,7 +72,8 @@ npm run dev
 ## Format-aware outputs and export actions
 
 - Generation is now format-aware and produces meaningfully different HTML deliverables for Ebook, Guide, Checklist, Worksheet, Landing Page Copy, Follow-up Email Sequence, and Brand Kit Suggestions.
-- The result panel includes an action row for Preview, Download HTML, Print / Save as PDF, Share (native when available), and Copy HTML.
+- The result panel includes an action row for Preview Pages, Download HTML, Export PDF, Share, and Copy HTML.
+- Preview / Export / Share now route through the server-side PDF pipeline (`/api/render-pdf` -> Browser Rendering REST -> R2 -> `/api/pdf`).
 - Downloaded files now use cleaner names based on brand, output type, and date (for example: `bibleautointeriors-ebook-2026-03-09.html`).
 - Native share gracefully falls back when unavailable in the current browser/device.
 
