@@ -72,7 +72,9 @@ export async function onRequestPost(context) {
       pdfUrl: `/api/pdf?key=${encodeURIComponent(pdfKey)}`,
       pdfKey,
       pageCount: previewPages.length,
-      previewPages
+      previewPages,
+      html: generatedHtml,
+      generationId
     });
   } catch (error) {
     return jsonResponse(
@@ -116,7 +118,7 @@ function buildPdfKey({ customerId, brandUrl, magnetType }) {
 
 function buildPreviewPages(html) {
   const chunks = html
-    .split(/<h[12][^>]*>/i)
+    .split(/(?=<h[12][^>]*>)/i)
     .map((chunk) => chunk.trim())
     .filter(Boolean);
 
@@ -124,6 +126,7 @@ function buildPreviewPages(html) {
     const plainText = chunk.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
     return {
       page: index + 1,
+      html: chunk,
       summary: plainText.slice(0, 220)
     };
   });

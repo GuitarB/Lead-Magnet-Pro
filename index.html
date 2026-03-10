@@ -186,6 +186,43 @@
   background: linear-gradient(to bottom, rgba(248, 250, 252, 0), rgba(248, 250, 252, 0.98));
 }
 
+.preview-carousel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.preview-carousel__viewport {
+  display: flex;
+  gap: 0.85rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 0.3rem;
+}
+
+.preview-page {
+  min-width: 100%;
+  scroll-snap-align: center;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.98), rgba(241, 245, 249, 0.98));
+  border-radius: 1rem;
+  padding: 1rem;
+  color: #0f172a;
+}
+
+.preview-page__content {
+  font-size: 0.95rem;
+  line-height: 1.7;
+}
+
+.preview-page__content p,
+.preview-page__content li {
+  color: #334155;
+}
+
 .print-only {
   display: none;
 }
@@ -723,7 +760,14 @@ body.export-mode #generatedDocument {
       <p class="text-sm font-semibold text-white">Document Preview</p>
       <span id="previewPageCount" class="text-xs uppercase tracking-[0.15em] text-slate-400">0 pages</span>
     </div>
-    <div id="documentPagePreview" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3"></div>
+    <div id="documentPagePreview" class="preview-carousel rounded-2xl border border-white/10 bg-slate-950/40 p-3">
+      <div class="preview-carousel__header">
+        <button id="previewPrevBtn" type="button" class="result-action-btn rounded-lg px-3 py-2 text-xs font-semibold">Previous</button>
+        <span id="previewActivePage" class="text-xs font-semibold uppercase tracking-[0.15em] text-slate-300">Page 0 / 0</span>
+        <button id="previewNextBtn" type="button" class="result-action-btn rounded-lg px-3 py-2 text-xs font-semibold">Next</button>
+      </div>
+      <div id="previewSwipeViewport" class="preview-carousel__viewport"></div>
+    </div>
   </div>
 
   <div class="p-0.5 sm:p-1 md:p-2">
@@ -819,6 +863,8 @@ body.export-mode #generatedDocument {
       generatedHtml: "",
       activeGenerationId: null,
       generatedPdf: null,
+      previewPages: [],
+      previewPageIndex: 0,
       workspace: null,
       isGenerating: false,
       isCheckoutPending: false,
@@ -865,6 +911,10 @@ body.export-mode #generatedDocument {
       generatedDocument: document.getElementById("generatedDocument"),
       exportMeta: document.getElementById("exportMeta"),
       previewPageCount: document.getElementById("previewPageCount"),
+      previewActivePage: document.getElementById("previewActivePage"),
+      previewPrevBtn: document.getElementById("previewPrevBtn"),
+      previewNextBtn: document.getElementById("previewNextBtn"),
+      previewSwipeViewport: document.getElementById("previewSwipeViewport"),
       documentPagePreview: document.getElementById("documentPagePreview"),
       previewResultBtn: document.getElementById("previewResultBtn"),
       downloadHtmlBtn: document.getElementById("downloadHtmlBtn"),
@@ -925,7 +975,7 @@ body.export-mode #generatedDocument {
 
       if (paymentState === "success" && sessionId) {
         const response = await fetch(`/api/verify-session?session_id=${encodeURIComponent(sessionId)}`);
-        const result = await response.json();
+        const result = await safeJson(response);
         if (!response.ok || !result.success) {
           setStatus("idle", result.error || "Unable to verify subscription after checkout.");
         } else {
@@ -1137,20 +1187,26 @@ body.export-mode #generatedDocument {
       return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>${getDocumentTitle()}</title><meta name="description" content="Generated ${titleize(state.form.magnetType)} for ${getBrandLabel()}" /><style>body{font-family:Inter,system-ui,-apple-system,sans-serif;background:#f8fafc;color:#0f172a;margin:0;padding:2rem}.document-shell{max-width:860px;margin:0 auto;background:#fff;border:1px solid #e2e8f0;border-radius:18px;box-shadow:0 12px 34px rgba(15,23,42,.09);padding:2.4rem}h1,h2,h3{color:#0f172a}p,li{color:#334155;line-height:1.75}.export-meta{margin-bottom:1.4rem;padding-bottom:1rem;border-bottom:1px solid #e2e8f0}.export-meta p{margin:.35rem 0 0;font-size:13px;color:#475569}@media print{@page{margin:.55in}body{background:#fff;padding:0}.document-shell{max-width:none;border:none;box-shadow:none;border-radius:0;padding:0}}</style></head><body><article class="document-shell"><div class="export-meta">${getExportMetaBlock()}</div>${state.generatedHtml}</article></body></html>`;
     }
 
-    function buildPreviewPages() {
-      if (state.generatedPdf?.previewPages?.length) {
-        const serverPages = state.generatedPdf.previewPages;
-        const limitedServerPages = serverPages.slice(0, 6);
-        els.documentPagePreview.innerHTML = limitedServerPages.map((page) => `<button type="button" class="doc-page-card w-full rounded-2xl p-3 text-left transition hover:-translate-y-0.5"><p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Page ${page.page}</p><div class="page-content mt-2 text-sm"><p>${page.summary}</p></div></button>`).join("");
-        els.previewPageCount.textContent = `${serverPages.length} page${serverPages.length === 1 ? "" : "s"}`;
-        return;
-      }
+    function normalizePreviewPages(rawPages = []) {
+      if (!Array.isArray(rawPages)) return [];
+      return rawPages
+        .map((page, index) => {
+          if (!page) return null;
+          const pageNumber = Number(page.page || index + 1);
+          const pageHtml = String(page.html || "").trim();
+          const pageSummary = String(page.summary || "").trim();
+          const fallbackHtml = pageSummary ? `<p>${pageSummary}</p>` : "";
+          return {
+            page: Number.isFinite(pageNumber) ? pageNumber : index + 1,
+            html: pageHtml || fallbackHtml,
+            summary: pageSummary
+          };
+        })
+        .filter((page) => page && page.html);
+    }
 
-      if (!state.generatedHtml) {
-        els.documentPagePreview.innerHTML = "";
-        els.previewPageCount.textContent = "0 pages";
-        return;
-      }
+    function getPreviewPagesFromHtml() {
+      if (!state.generatedHtml) return [];
       const parser = new DOMParser();
       const doc = parser.parseFromString(`<div>${state.generatedHtml}</div>`, "text/html");
       const nodes = Array.from(doc.body.firstElementChild?.children || []);
@@ -1165,30 +1221,134 @@ body.export-mode #generatedDocument {
       });
       if (current.length) pages.push(current.join(""));
       const safePages = pages.length ? pages : [state.generatedHtml];
-      const limited = safePages.slice(0, 6);
-      els.documentPagePreview.innerHTML = limited.map((page, index) => `<button type="button" class="doc-page-card w-full rounded-2xl p-3 text-left transition hover:-translate-y-0.5" data-page-target="${index + 1}"><p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Page ${index + 1}</p><div class="page-content mt-2 text-sm">${page}</div></button>`).join("");
-      els.previewPageCount.textContent = `${safePages.length} page${safePages.length === 1 ? "" : "s"}`;
+      return safePages.map((page, index) => ({
+        page: index + 1,
+        html: page,
+        summary: page.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 220)
+      }));
+    }
+
+    function updatePreviewControls() {
+      const pageCount = state.previewPages.length;
+      els.previewActivePage.textContent = pageCount ? `Page ${state.previewPageIndex + 1} / ${pageCount}` : "Page 0 / 0";
+      els.previewPrevBtn.disabled = !pageCount || state.previewPageIndex === 0;
+      els.previewNextBtn.disabled = !pageCount || state.previewPageIndex >= pageCount - 1;
+    }
+
+    function renderPreviewCarousel() {
+      const pages = state.previewPages;
+      const pageCount = pages.length;
+      els.previewPageCount.textContent = `${pageCount} page${pageCount === 1 ? "" : "s"}`;
+      if (!pageCount) {
+        els.previewSwipeViewport.innerHTML = '<div class="preview-page"><div class="preview-page__content"><p>No preview pages yet. Generate or export a PDF first.</p></div></div>';
+        updatePreviewControls();
+        return;
+      }
+
+      state.previewPageIndex = Math.max(0, Math.min(state.previewPageIndex, pageCount - 1));
+      els.previewSwipeViewport.innerHTML = pages.map((page) => `<article class="preview-page" data-preview-page="${page.page}"><div class="preview-page__content generated-html">${page.html}</div></article>`).join("");
+      updatePreviewControls();
+      const activePage = els.previewSwipeViewport.children[state.previewPageIndex];
+      if (activePage) {
+        activePage.scrollIntoView({ behavior: "smooth", inline: "start", block: "nearest" });
+      }
+    }
+
+    function buildPreviewPages() {
+      const serverPages = normalizePreviewPages(state.generatedPdf?.previewPages || []);
+      state.previewPages = serverPages.length ? serverPages : getPreviewPagesFromHtml();
+      renderPreviewCarousel();
+    }
+
+    function setActionButtonLoading(button, isLoading, loadingText) {
+      if (!button) return;
+      if (!button.dataset.defaultLabel) {
+        button.dataset.defaultLabel = button.textContent;
+      }
+      button.disabled = isLoading;
+      button.textContent = isLoading ? loadingText : button.dataset.defaultLabel;
     }
 
     function setResultActionsEnabled() {
       const enabled = Boolean(state.generatedHtml);
       [els.previewResultBtn, els.downloadHtmlBtn, els.printPdfBtn, els.shareResultBtn, els.copyHtmlBtn].forEach((button) => {
+        if (!button) return;
+        if (button.dataset.defaultLabel) {
+          button.textContent = button.dataset.defaultLabel;
+        }
         button.disabled = !enabled;
       });
+      els.previewPrevBtn.disabled = !state.previewPages.length || state.previewPageIndex === 0;
+      els.previewNextBtn.disabled = !state.previewPages.length || state.previewPageIndex >= state.previewPages.length - 1;
+    }
+
+    async function safeJson(response) {
+      const text = await response.text();
+      if (!text) return {};
+      try {
+        return JSON.parse(text);
+      } catch {
+        throw new Error(`Unexpected ${response.status} response from server.`);
+      }
+    }
+
+    function normalizePdfPayload(payload = {}) {
+      const pdfKey = payload.pdfKey || null;
+      const pdfUrl = payload.pdfUrl || (pdfKey ? `/api/pdf?key=${encodeURIComponent(pdfKey)}` : null);
+      const previewPages = normalizePreviewPages(payload.previewPages || []);
+      const pageCount = Number(payload.pageCount);
+      return {
+        generationId: payload.generationId || state.activeGenerationId || null,
+        html: payload.html || state.generatedHtml || "",
+        pdfKey,
+        pdfUrl,
+        previewPages,
+        pageCount: Number.isFinite(pageCount) ? pageCount : previewPages.length
+      };
+    }
+
+    async function copyTextWithFallback(value) {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(value);
+        return;
+      }
+      const textarea = document.createElement("textarea");
+      textarea.value = value;
+      textarea.setAttribute("readonly", "readonly");
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.select();
+      const copied = document.execCommand("copy");
+      document.body.removeChild(textarea);
+      if (!copied) {
+        throw new Error("Clipboard copy is not supported in this browser.");
+      }
+    }
+
+    function toAbsoluteUrl(url) {
+      if (!url) return "";
+      return new URL(url, window.location.origin).toString();
+    }
+
+    function movePreviewPage(direction) {
+      if (!state.previewPages.length) return;
+      state.previewPageIndex = Math.max(0, Math.min(state.previewPageIndex + direction, state.previewPages.length - 1));
+      renderPreviewCarousel();
     }
 
     async function handlePreviewResult() {
+      setActionButtonLoading(els.previewResultBtn, true, "Loading...");
       try {
+        setStatus("ready", "Preparing PDF preview pages...");
         await ensureRenderedPdf();
+        buildPreviewPages();
+        setStatus("success", "Preview pages are ready.");
       } catch (error) {
         setStatus("error", error.message || "Unable to fetch server PDF preview pages.");
+      } finally {
+        setActionButtonLoading(els.previewResultBtn, false);
       }
-      buildPreviewPages();
-      els.generatedDocument.scrollIntoView({ behavior: "smooth", block: "start" });
-      els.generatedDocument.classList.add("ring-2", "ring-brand-300", "ring-offset-2", "ring-offset-slate-900");
-      setTimeout(() => {
-        els.generatedDocument.classList.remove("ring-2", "ring-brand-300", "ring-offset-2", "ring-offset-slate-900");
-      }, 1200);
     }
 
     function handleDownloadHtml() {
@@ -1205,8 +1365,13 @@ body.export-mode #generatedDocument {
     }
 
     async function ensureRenderedPdf() {
-      if (state.generatedPdf?.pdfUrl && state.generatedPdf?.pdfKey) {
-        return state.generatedPdf;
+      if (state.generatedPdf?.pdfUrl) {
+        const normalizedExisting = normalizePdfPayload(state.generatedPdf);
+        state.generatedPdf = normalizedExisting;
+        return normalizedExisting;
+      }
+      if (!state.generatedHtml) {
+        throw new Error("Generate content before exporting a PDF.");
       }
 
       const response = await fetch("/api/render-pdf", {
@@ -1221,72 +1386,72 @@ body.export-mode #generatedDocument {
         })
       });
 
-      const result = await response.json();
+      const result = await safeJson(response);
       if (!response.ok || !result.success) {
-        throw new Error(result.error || "Unable to render PDF.");
+        throw new Error(result.error || result.details || "Unable to render PDF.");
       }
 
-      state.generatedPdf = {
-        pdfUrl: result.pdfUrl,
-        pdfKey: result.pdfKey,
-        pageCount: result.pageCount,
-        previewPages: result.previewPages || []
-      };
-      if (typeof result.pageCount === "number") {
-        els.previewPageCount.textContent = `${result.pageCount} page${result.pageCount === 1 ? "" : "s"}`;
-      }
+      state.generatedPdf = normalizePdfPayload(result);
+      state.activeGenerationId = state.generatedPdf.generationId || state.activeGenerationId;
       return state.generatedPdf;
     }
 
     async function handlePrintPdf() {
+      setActionButtonLoading(els.printPdfBtn, true, "Preparing...");
       try {
-        setStatus("ready", "Rendering PDF on the server...");
+        setStatus("ready", "Preparing PDF...");
         const pdf = await ensureRenderedPdf();
-        window.open(`${pdf.pdfUrl}&download=1`, "_blank", "noopener,noreferrer");
-        setStatus("success", "PDF rendered and ready for download.");
+        const downloadUrl = `${toAbsoluteUrl(pdf.pdfUrl)}&download=1`;
+        window.open(downloadUrl, "_blank", "noopener,noreferrer");
+        setStatus("success", "PDF ready.");
       } catch (error) {
-        setStatus("error", error.message || "PDF export failed.");
+        setStatus("error", `Export failed: ${error.message || "Unknown error"}`);
+      } finally {
+        setActionButtonLoading(els.printPdfBtn, false);
       }
     }
 
     async function handleCopyHtml() {
+      setActionButtonLoading(els.copyHtmlBtn, true, "Copying...");
       try {
-        if (!navigator.clipboard?.writeText) throw new Error("Clipboard not available");
-        await navigator.clipboard.writeText(state.generatedHtml);
-        setStatus("success", "Generated HTML copied to clipboard.");
-      } catch {
-        setStatus("error", "Could not copy HTML in this browser. Try Download HTML instead.");
+        await copyTextWithFallback(toStandaloneHtmlDocument());
+        setStatus("success", "HTML copied.");
+      } catch (error) {
+        setStatus("error", error.message || "Could not copy HTML.");
+      } finally {
+        setActionButtonLoading(els.copyHtmlBtn, false);
       }
     }
 
     async function handleShareResult() {
+      setActionButtonLoading(els.shareResultBtn, true, "Sharing...");
       try {
-        setStatus("ready", "Rendering shareable PDF...");
+        setStatus("ready", "Preparing PDF...");
         const pdf = await ensureRenderedPdf();
-        const shareUrl = `${window.location.origin}${pdf.pdfUrl}`;
+        const shareUrl = toAbsoluteUrl(pdf.pdfUrl);
+        if (!shareUrl) throw new Error("PDF link is unavailable.");
+
         if (navigator.share) {
           await navigator.share({
             title: getDocumentTitle(),
             text: `Polished ${titleize(state.form.magnetType)} deliverable for ${getBrandLabel()}.`,
             url: shareUrl
           });
-          setStatus("success", "Share sheet opened.");
+          setStatus("success", "Shared successfully.");
           return;
         }
 
-        if (navigator.clipboard?.writeText) {
-          await navigator.clipboard.writeText(shareUrl);
-          setStatus("ready", "Share is unavailable here. Direct PDF URL copied to clipboard.");
-          return;
-        }
-
-        setStatus("error", "Share is unavailable in this browser.");
+        await copyTextWithFallback(shareUrl);
+        setStatus("success", "Shared successfully. PDF link copied.");
+        window.open(shareUrl, "_blank", "noopener,noreferrer");
       } catch (error) {
         if (error?.name === "AbortError") {
           setStatus("idle", "Share canceled.");
           return;
         }
         setStatus("error", error.message || "Share failed in this environment.");
+      } finally {
+        setActionButtonLoading(els.shareResultBtn, false);
       }
     }
 
@@ -1362,7 +1527,7 @@ body.export-mode #generatedDocument {
 
       els.workspaceMessage.textContent = "Loading workspace...";
       const response = await fetch(`/api/workspace?email=${encodeURIComponent(normalizedEmail)}`);
-      const result = await response.json();
+      const result = await safeJson(response);
 
       if (response.status === 404) {
         state.workspace = null;
@@ -1409,9 +1574,9 @@ body.export-mode #generatedDocument {
       renderResultPreview();
       updateGenerateButtonLabel();
 
-      state.generatedHtml = generation.generatedHtml || "";
-      state.activeGenerationId = generation.id || null;
-      state.generatedPdf = generation.pdfKey ? { pdfKey: generation.pdfKey, pdfUrl: `/api/pdf?key=${encodeURIComponent(generation.pdfKey)}` } : null;
+      state.generatedHtml = generation.html || generation.generatedHtml || "";
+      state.activeGenerationId = generation.generationId || generation.id || null;
+      state.generatedPdf = generation.pdfKey ? normalizePdfPayload(generation) : null;
       setResultActionsEnabled();
       if (state.generatedHtml) {
         els.generatedDocument.innerHTML = `<div id="exportMeta" class="print-only"></div><div class="generated-html">${state.generatedHtml}</div>`;
@@ -1432,7 +1597,7 @@ body.export-mode #generatedDocument {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ customerId: state.workspace.customerId, email: els.workspaceEmail.value.trim() })
       });
-      const result = await response.json();
+      const result = await safeJson(response);
 
       if (!response.ok || !result.success) {
         els.workspaceMessage.textContent = result.error || "Billing portal is not available yet.";
@@ -1472,7 +1637,7 @@ body.export-mode #generatedDocument {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)
         });
-        const result = await response.json();
+        const result = await safeJson(response);
 
         console.log("[checkout] response payload", result);
 
@@ -1527,11 +1692,11 @@ body.export-mode #generatedDocument {
             customerId: state.subscription.customerId || ""
           })
         });
-        const result = await response.json();
+        const result = await safeJson(response);
         if (!response.ok || !result.success) throw new Error(result.error || "Generation failed.");
         state.generatedHtml = result.html;
-        state.activeGenerationId = result.savedGeneration?.id || null;
-        state.generatedPdf = null;
+        state.activeGenerationId = result.generationId || result.savedGeneration?.id || null;
+        state.generatedPdf = normalizePdfPayload(result);
         renderResultPreview();
         setResultActionsEnabled();
         els.generatedDocument.innerHTML = `<div id="exportMeta" class="print-only"></div><div class="generated-html">${state.generatedHtml}</div>`;
@@ -1555,6 +1720,8 @@ body.export-mode #generatedDocument {
       state.generatedHtml = "";
       state.activeGenerationId = null;
       state.generatedPdf = null;
+      state.previewPages = [];
+      state.previewPageIndex = 0;
       setGeneratingState(false);
       els.leadForm.reset();
       renderResultPreview();
@@ -1649,10 +1816,16 @@ body.export-mode #generatedDocument {
     });
 
     els.previewResultBtn.addEventListener("click", handlePreviewResult);
-    els.documentPagePreview.addEventListener("click", (event) => {
-      const button = event.target.closest("[data-page-target]");
-      if (!button) return;
-      handlePreviewResult();
+    els.previewPrevBtn.addEventListener("click", () => movePreviewPage(-1));
+    els.previewNextBtn.addEventListener("click", () => movePreviewPage(1));
+    els.previewSwipeViewport.addEventListener("scroll", () => {
+      if (!state.previewPages.length) return;
+      const pageWidth = els.previewSwipeViewport.clientWidth || 1;
+      const nextIndex = Math.round(els.previewSwipeViewport.scrollLeft / pageWidth);
+      if (nextIndex !== state.previewPageIndex) {
+        state.previewPageIndex = Math.max(0, Math.min(nextIndex, state.previewPages.length - 1));
+        updatePreviewControls();
+      }
     });
     els.downloadHtmlBtn.addEventListener("click", handleDownloadHtml);
     els.printPdfBtn.addEventListener("click", handlePrintPdf);

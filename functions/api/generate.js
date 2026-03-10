@@ -205,6 +205,11 @@ Return only polished HTML for the lead magnet.
     return jsonResponse({
       success: true,
       html: generatedHtml,
+      generationId: savedGeneration?.id || null,
+      pdfUrl: null,
+      pdfKey: null,
+      pageCount: 0,
+      previewPages: [],
       savedGeneration: savedGeneration
         ? {
             id: savedGeneration.id,

@@ -78,11 +78,16 @@ export async function onRequestGet(context) {
 
     const recentGenerations = (rows?.results || []).map((row) => ({
       id: row.id,
+      generationId: row.id,
       brandUrl: row.brand_url || "",
       magnetType: row.magnet_type || "guide",
       createdAt: row.created_at,
       generatedHtml: row.generated_html || "",
+      html: row.generated_html || "",
       pdfKey: hasPdfColumns ? row.pdf_key || null : null,
+      pdfUrl: hasPdfColumns && row.pdf_key ? `/api/pdf?key=${encodeURIComponent(row.pdf_key)}` : null,
+      pageCount: 0,
+      previewPages: [],
       pdfCreatedAt: hasPdfColumns ? row.pdf_created_at || null : null,
       plan
     }));
