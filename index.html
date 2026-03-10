@@ -443,11 +443,27 @@
               </div>
 
               <div>
+                <div id="currentPlanSummary" class="mb-4 hidden rounded-2xl border border-emerald-400/30 bg-emerald-400/10 p-4">
+                  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p class="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-200">Current Workspace Plan</p>
+                      <p id="currentPlanSummaryText" class="mt-1 text-base font-semibold text-white">Starter • Active</p>
+                      <p id="currentPlanSummaryMeta" class="mt-1 text-xs text-emerald-100/90">Using your paid workspace plan for generation.</p>
+                    </div>
+                    <button
+                      id="togglePlansBtn"
+                      type="button"
+                      class="rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-xs font-semibold text-white transition hover:bg-white/20"
+                    >
+                      Change Plan
+                    </button>
+                  </div>
+                </div>
                 <p class="mb-3 block text-sm font-medium text-slate-200">Select Plan</p>
                 <p class="mb-4 text-xs text-slate-400">
                   Free gives one preview; paid plans unlock monthly generations and saved history.
                 </p>
-                <div class="grid gap-3 sm:grid-cols-2">
+                <div id="planSelectorPanel" class="grid gap-3 sm:grid-cols-2">
                   <label class="group rounded-2xl border border-white/10 bg-slate-950/70 p-4 text-sm text-slate-200 transition hover:border-brand-400/60 hover:bg-slate-900/80">
                     <input type="radio" name="plan" value="free" class="h-4 w-4 accent-brand-500" checked />
                     <span class="mt-3 block text-base font-semibold text-white">Free</span>
@@ -556,7 +572,7 @@
           <aside class="space-y-6">
             <div class="glass rounded-3xl p-6">
               <p class="text-sm font-semibold text-white">Generation Status</p>
-              <div class="mt-4 rounded-2xl border border-white/10 bg-slate-950/60 p-4">
+              <div id="statusPanel" class="mt-4 rounded-2xl border border-white/10 bg-slate-950/60 p-4 transition">
                 <p id="statusBadge" class="inline-flex rounded-full border border-amber-400/20 bg-amber-400/10 px-3 py-1 text-xs font-medium text-amber-300">
                   Awaiting input
                 </p>
@@ -670,7 +686,9 @@
       subscription: readStoredSubscription(),
       form: { brandUrl: "", fileName: "", magnetType: "guide", audience: "", goal: "", plan: "free" },
       generatedHtml: "",
-      workspace: null
+      workspace: null,
+      isGenerating: false,
+      showPlanSelector: true
     };
 
     const els = {
@@ -689,7 +707,13 @@
       magnetType: document.getElementById("magnetType"),
       audience: document.getElementById("audience"),
       goal: document.getElementById("goal"),
+      currentPlanSummary: document.getElementById("currentPlanSummary"),
+      currentPlanSummaryText: document.getElementById("currentPlanSummaryText"),
+      currentPlanSummaryMeta: document.getElementById("currentPlanSummaryMeta"),
+      togglePlansBtn: document.getElementById("togglePlansBtn"),
+      planSelectorPanel: document.getElementById("planSelectorPanel"),
       planOptions: document.querySelectorAll('input[name="plan"]'),
+      statusPanel: document.getElementById("statusPanel"),
       statusBadge: document.getElementById("statusBadge"),
       statusText: document.getElementById("statusText"),
       generateBtnHelper: document.getElementById("generateBtnHelper"),
@@ -775,12 +799,62 @@
       }
     }
 
+    const isWorkspaceActivePaid = (workspace = state.workspace) => Boolean(
+      workspace
+      && PAID_PLANS.has(workspace.plan)
+      && workspace.subscriptionStatus === "active"
+    );
+
+    function updatePlanSelectorVisibility() {
+      const activePaidWorkspace = isWorkspaceActivePaid();
+      const shouldShowFullPlans = !activePaidWorkspace || state.showPlanSelector;
+
+      els.planSelectorPanel.classList.toggle("hidden", !shouldShowFullPlans);
+      els.currentPlanSummary.classList.toggle("hidden", !activePaidWorkspace);
+      els.togglePlansBtn.textContent = shouldShowFullPlans ? "Hide Plans" : "Change Plan";
+
+      if (activePaidWorkspace) {
+        els.currentPlanSummaryText.textContent = `${titleize(state.workspace.plan)} • Active`;
+        els.currentPlanSummaryMeta.textContent = `${state.workspace.generationsRemaining} generations remaining this billing period.`;
+      }
+    }
+
+    function getGenerateButtonCopy() {
+      const activePaidForSelectedPlan = PAID_PLANS.has(state.form.plan)
+        && state.subscription.active
+        && state.subscription.plan === state.form.plan;
+
+      if (state.isGenerating) {
+        return { label: "Generating...", helper: "Please wait while we generate your lead magnet. Avoid refreshing this page." };
+      }
+
+      if (activePaidForSelectedPlan) {
+        return {
+          label: `Generate ${titleize(state.form.magnetType)}`,
+          helper: "Your active subscription is loaded. Generate and save to your workspace instantly."
+        };
+      }
+
+      if (PAID_PLANS.has(state.form.plan)) {
+        return {
+          label: `Continue to ${titleize(state.form.plan)} Checkout`,
+          helper: "Paid plans open secure Stripe checkout, then generate and save your lead magnets automatically."
+        };
+      }
+
+      return { label: "Generate Free Preview", helper: "Free plan generates one preview instantly — no checkout needed." };
+    }
+
     function updateGenerateButtonLabel() {
-      const isPaid = PAID_PLANS.has(state.form.plan);
-      els.generateBtn.textContent = isPaid ? `Continue to ${titleize(state.form.plan)} Checkout` : "Generate Free Preview";
-      els.generateBtnHelper.textContent = isPaid
-        ? "Paid plans open secure Stripe checkout, then generate and save your lead magnets automatically."
-        : "Free plan generates one preview instantly — no checkout needed.";
+      const copy = getGenerateButtonCopy();
+      els.generateBtn.textContent = copy.label;
+      els.generateBtnHelper.textContent = copy.helper;
+      els.generateBtn.disabled = state.isGenerating;
+    }
+
+    function setGeneratingState(isGenerating) {
+      state.isGenerating = isGenerating;
+      updateGenerateButtonLabel();
     }
 
     function setView(view) {
@@ -817,10 +891,19 @@
       const badgeStyles = {
         idle: "border-amber-400/20 bg-amber-400/10 text-amber-300",
         ready: "border-sky-400/20 bg-sky-400/10 text-sky-300",
-        generating: "border-brand-400/20 bg-brand-400/10 text-brand-200",
-        success: "border-emerald-400/20 bg-emerald-400/10 text-emerald-300"
+        generating: "border-brand-300/40 bg-brand-400/20 text-brand-100",
+        success: "border-emerald-400/20 bg-emerald-400/10 text-emerald-300",
+        error: "border-rose-400/30 bg-rose-500/10 text-rose-200"
       };
-      const labels = { idle: "Awaiting input", ready: "Ready", generating: "Generating", success: "Done" };
+      const panelStyles = {
+        idle: "border-white/10 bg-slate-950/60",
+        ready: "border-sky-400/25 bg-sky-500/5",
+        generating: "border-brand-400/45 bg-brand-500/10",
+        success: "border-emerald-400/30 bg-emerald-500/5",
+        error: "border-rose-400/30 bg-rose-500/10"
+      };
+      const labels = { idle: "Awaiting input", ready: "Ready", generating: "Generating", success: "Done", error: "Action needed" };
+      els.statusPanel.className = "mt-4 rounded-2xl border p-4 transition " + panelStyles[type];
       els.statusBadge.className = "inline-flex rounded-full border px-3 py-1 text-xs font-medium " + badgeStyles[type];
       els.statusBadge.textContent = labels[type];
       els.statusText.textContent = message;
@@ -835,6 +918,7 @@
 
     function renderWorkspace(data) {
       state.workspace = data;
+      state.showPlanSelector = !isWorkspaceActivePaid(data);
       els.workspacePanel.classList.remove("hidden");
       els.workspacePlan.textContent = titleize(data.plan);
       els.workspaceStatus.textContent = titleize(data.subscriptionStatus || "inactive");
@@ -879,6 +963,10 @@
       const result = await response.json();
 
       if (response.status === 404) {
+        state.workspace = null;
+        state.showPlanSelector = true;
+        updatePlanSelectorVisibility();
+        updateGenerateButtonLabel();
         els.workspacePanel.classList.add("hidden");
         els.workspaceMessage.textContent = "No workspace found for that email yet.";
         return;
@@ -900,10 +988,11 @@
       if (PAID_PLANS.has(result.plan)) {
         state.form.plan = result.plan;
         els.planOptions.forEach((opt) => { opt.checked = opt.value === result.plan; });
-        updateGenerateButtonLabel();
       }
 
       renderWorkspace(result);
+      updatePlanSelectorVisibility();
+      updateGenerateButtonLabel();
     }
 
     function loadSavedGeneration(generation) {
@@ -966,6 +1055,8 @@
     }
 
     async function handleGenerate() {
+      if (state.isGenerating) return;
+
       syncStateFromForm();
       if (!validateForm()) {
         setStatus("idle", "Add at least a URL, audience, or goal before generating.");
@@ -980,7 +1071,9 @@
       }
 
       try {
-        setStatus("generating", "Generating lead magnet with AI...");
+        setGeneratingState(true);
+        setStatus("generating", "Generating lead magnet with AI. This can take a few moments...");
+        els.statusPanel.scrollIntoView({ behavior: "smooth", block: "center" });
         const response = await fetch("/api/generate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -998,11 +1091,12 @@
         state.generatedHtml = result.html;
         renderResultPreview();
         els.generatedDocument.innerHTML = `<div class="generated-html">${state.generatedHtml}</div>`;
-        setStatus("success", "Lead magnet generated successfully.");
+        setStatus("success", "Lead magnet generated successfully. Scroll down to review your output.");
         setView("result");
       } catch (error) {
-        setStatus("idle", error.message || "Something went wrong during generation.");
-        alert(error.message || "Something went wrong during generation.");
+        setStatus("error", error.message || "Generation failed. Please try again.");
+      } finally {
+        setGeneratingState(false);
       }
     }
 
@@ -1010,9 +1104,13 @@
       sessionStorage.removeItem(FORM_STATE_KEY);
       sessionStorage.removeItem(CHECKOUT_INTENT_KEY);
       state.form = { brandUrl: "", fileName: "", magnetType: "guide", audience: "", goal: "", plan: "free" };
+      state.workspace = null;
+      state.showPlanSelector = true;
+      setGeneratingState(false);
       els.leadForm.reset();
       els.planOptions.forEach((opt) => { opt.checked = opt.value === "free"; });
       renderResultPreview();
+      updatePlanSelectorVisibility();
       updateGenerateButtonLabel();
       setStatus("idle", "Complete the fields and submit to prepare the generation payload.");
       setView("landing");
@@ -1029,6 +1127,7 @@
         input.addEventListener(eventName, () => {
           syncStateFromForm();
           setStatus("ready", "Inputs saved locally and ready for generation.");
+          updatePlanSelectorVisibility();
         });
       });
     });
@@ -1046,6 +1145,11 @@
       }
     });
 
+    els.togglePlansBtn.addEventListener("click", () => {
+      state.showPlanSelector = !state.showPlanSelector;
+      updatePlanSelectorVisibility();
+    });
+
     els.manageBillingBtn.addEventListener("click", async () => {
       try {
         await handleManageBilling();
@@ -1056,6 +1160,7 @@
 
     restoreFormState();
     renderResultPreview();
+    updatePlanSelectorVisibility();
     updateGenerateButtonLabel();
     setStatus("idle", "Complete the fields and submit to prepare the generation payload.");
     processPaymentQueryParams();
