@@ -134,6 +134,25 @@
   margin-bottom: 0;
 }
 
+
+
+.result-action-btn {
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(15, 23, 42, 0.55);
+  color: #cbd5e1;
+  transition: all 0.18s ease;
+}
+
+.result-action-btn:hover:not(:disabled) {
+  background: rgba(51, 65, 85, 0.65);
+  color: #f8fafc;
+}
+
+.result-action-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 @media (max-width: 640px) {
   .generated-html h1 {
     font-size: 1.75rem;
@@ -586,6 +605,14 @@
     </div>
   </div>
 
+  <div class="mb-4 flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-slate-900/40 p-2 sm:gap-2.5 sm:p-3">
+    <button id="previewResultBtn" type="button" class="result-action-btn rounded-lg px-3 py-2 text-xs font-semibold">Preview</button>
+    <button id="downloadHtmlBtn" type="button" class="result-action-btn rounded-lg px-3 py-2 text-xs font-semibold">Download HTML</button>
+    <button id="printPdfBtn" type="button" class="result-action-btn rounded-lg px-3 py-2 text-xs font-semibold">Print / Save PDF</button>
+    <button id="shareResultBtn" type="button" class="result-action-btn rounded-lg px-3 py-2 text-xs font-semibold">Share</button>
+    <button id="copyHtmlBtn" type="button" class="result-action-btn rounded-lg px-3 py-2 text-xs font-semibold">Copy HTML</button>
+  </div>
+
   <div class="p-0.5 sm:p-1 md:p-2">
     <div
       id="generatedDocument"
@@ -711,6 +738,11 @@
       resultAudience: document.getElementById("resultAudience"),
       resultPlan: document.getElementById("resultPlan"),
       generatedDocument: document.getElementById("generatedDocument"),
+      previewResultBtn: document.getElementById("previewResultBtn"),
+      downloadHtmlBtn: document.getElementById("downloadHtmlBtn"),
+      printPdfBtn: document.getElementById("printPdfBtn"),
+      shareResultBtn: document.getElementById("shareResultBtn"),
+      copyHtmlBtn: document.getElementById("copyHtmlBtn"),
       workspaceEmail: document.getElementById("workspaceEmail"),
       loadWorkspaceBtn: document.getElementById("loadWorkspaceBtn"),
       workspaceMessage: document.getElementById("workspaceMessage"),
@@ -924,6 +956,119 @@
       els.resultPlan.textContent = titleize(state.form.plan);
     }
 
+
+    function getBrandSlugFromUrl(rawUrl) {
+      if (!rawUrl) return "lead-magnet";
+      try {
+        const parsed = new URL(rawUrl);
+        const hostname = parsed.hostname.replace(/^www\./i, "");
+        const cleaned = hostname.split(".").filter(Boolean)[0] || hostname;
+        return cleaned.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "lead-magnet";
+      } catch {
+        return String(rawUrl).toLowerCase().replace(/https?:\/\//, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "lead-magnet";
+      }
+    }
+
+    function getFormatSlug() {
+      return (state.form.magnetType || "guide").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "guide";
+    }
+
+    function getExportDateStamp() {
+      const date = new Date();
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    }
+
+    function getExportFilename() {
+      return `${getBrandSlugFromUrl(state.form.brandUrl)}-${getFormatSlug()}-${getExportDateStamp()}`;
+    }
+
+    function getDocumentTitle() {
+      return `${titleize(state.form.magnetType)} for ${state.form.brandUrl || "Your Brand"}`;
+    }
+
+    function toStandaloneHtmlDocument() {
+      return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>${getDocumentTitle()}</title></head><body>${state.generatedHtml}</body></html>`;
+    }
+
+    function setResultActionsEnabled() {
+      const enabled = Boolean(state.generatedHtml);
+      [els.previewResultBtn, els.downloadHtmlBtn, els.printPdfBtn, els.shareResultBtn, els.copyHtmlBtn].forEach((button) => {
+        button.disabled = !enabled;
+      });
+    }
+
+    function handlePreviewResult() {
+      els.generatedDocument.scrollIntoView({ behavior: "smooth", block: "start" });
+      els.generatedDocument.classList.add("ring-2", "ring-brand-300", "ring-offset-2", "ring-offset-slate-900");
+      setTimeout(() => {
+        els.generatedDocument.classList.remove("ring-2", "ring-brand-300", "ring-offset-2", "ring-offset-slate-900");
+      }, 1200);
+    }
+
+    function handleDownloadHtml() {
+      const blob = new Blob([toStandaloneHtmlDocument()], { type: "text/html;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `${getExportFilename()}.html`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      URL.revokeObjectURL(url);
+      setStatus("success", "HTML file downloaded. You can open it in any browser.");
+    }
+
+    function handlePrintPdf() {
+      handlePreviewResult();
+      setStatus("ready", "Use your browser print dialog to print or Save as PDF.");
+      window.print();
+    }
+
+    async function handleCopyHtml() {
+      try {
+        if (!navigator.clipboard?.writeText) throw new Error("Clipboard not available");
+        await navigator.clipboard.writeText(state.generatedHtml);
+        setStatus("success", "Generated HTML copied to clipboard.");
+      } catch {
+        setStatus("error", "Could not copy HTML in this browser. Try Download HTML instead.");
+      }
+    }
+
+    async function handleShareResult() {
+      const shareTitle = getDocumentTitle();
+      const summary = `Generated ${titleize(state.form.magnetType)} from ${state.form.brandUrl || "your brand"}.`;
+      const fileName = `${getExportFilename()}.html`;
+
+      try {
+        if (navigator.share && navigator.canShare && window.File) {
+          const file = new File([toStandaloneHtmlDocument()], fileName, { type: "text/html" });
+          if (navigator.canShare({ files: [file] })) {
+            await navigator.share({ title: shareTitle, text: summary, files: [file] });
+            setStatus("success", "Shared successfully.");
+            return;
+          }
+        }
+
+        if (navigator.share) {
+          await navigator.share({ title: shareTitle, text: summary, url: window.location.href });
+          setStatus("success", "Shared successfully.");
+          return;
+        }
+
+        await handleCopyHtml();
+        setStatus("ready", "Native sharing is unavailable here. HTML copied to clipboard as a fallback.");
+      } catch (error) {
+        if (error?.name === "AbortError") {
+          setStatus("idle", "Share canceled.");
+          return;
+        }
+        setStatus("error", "Share failed in this environment. Try Download HTML instead.");
+      }
+    }
+
     function setStatus(type, message) {
       const badgeStyles = {
         idle: "border-amber-400/20 bg-amber-400/10 text-amber-300",
@@ -1046,6 +1191,7 @@
       updateGenerateButtonLabel();
 
       state.generatedHtml = generation.generatedHtml || "";
+      setResultActionsEnabled();
       if (state.generatedHtml) {
         els.generatedDocument.innerHTML = `<div class="generated-html">${state.generatedHtml}</div>`;
         setView("result");
@@ -1129,6 +1275,7 @@
         if (!response.ok || !result.success) throw new Error(result.error || "Generation failed.");
         state.generatedHtml = result.html;
         renderResultPreview();
+        setResultActionsEnabled();
         els.generatedDocument.innerHTML = `<div class="generated-html">${state.generatedHtml}</div>`;
         setStatus("success", "Lead magnet generated successfully. Scroll down to review your output.");
         closePricingModal();
@@ -1150,6 +1297,7 @@
       els.leadForm.reset();
       els.planOptions.forEach((opt) => { opt.checked = opt.value === "free"; });
       renderResultPreview();
+      setResultActionsEnabled();
       updatePlanSelectorVisibility();
       updateGenerateButtonLabel();
       setStatus("idle", "Complete the fields and submit to prepare the generation payload.");
@@ -1235,8 +1383,15 @@
       }
     });
 
+    els.previewResultBtn.addEventListener("click", handlePreviewResult);
+    els.downloadHtmlBtn.addEventListener("click", handleDownloadHtml);
+    els.printPdfBtn.addEventListener("click", handlePrintPdf);
+    els.shareResultBtn.addEventListener("click", handleShareResult);
+    els.copyHtmlBtn.addEventListener("click", handleCopyHtml);
+
     restoreFormState();
     renderResultPreview();
+    setResultActionsEnabled();
     updatePlanSelectorVisibility();
     updateGenerateButtonLabel();
     updateNavCta();

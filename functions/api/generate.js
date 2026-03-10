@@ -4,6 +4,73 @@ const PLAN_LIMITS = {
   founder: 200
 };
 
+const FORMAT_GUIDES = {
+  ebook: {
+    label: "Ebook",
+    expectations: [
+      "Long-form deliverable with substantial depth and chapter-like structure.",
+      "Open with a title-page style cover section containing the asset title, subtitle, and intended audience.",
+      "Include a table of contents that links to chapter IDs via anchor links.",
+      "Provide at least 6 major sections/chapters with practical examples, frameworks, and action summaries.",
+      "Close with a next-steps conclusion and CTA section."
+    ]
+  },
+  guide: {
+    label: "Guide",
+    expectations: [
+      "Medium-length practical instructional resource.",
+      "Use clear section headings in a logical sequence from setup to execution.",
+      "Include concise takeaways and implementation notes in each section.",
+      "Provide a quick-start summary and final action plan."
+    ]
+  },
+  checklist: {
+    label: "Checklist",
+    expectations: [
+      "Highly scannable and concise checklist-style deliverable.",
+      "Organize into phases with short action-oriented checklist items.",
+      "Use checkbox symbols (☐) in list items for completion tracking.",
+      "Minimize long paragraphs; keep sections compact and tactical."
+    ]
+  },
+  worksheet: {
+    label: "Worksheet",
+    expectations: [
+      "Interactive-feeling worksheet with fill-in prompts and exercises.",
+      "Use sections with prompts, reflection questions, and answer spaces represented in HTML.",
+      "Include multiple mini-exercises and a final synthesis section.",
+      "Keep language coach-like and directive so users can complete it immediately."
+    ]
+  },
+  "landing-page-copy": {
+    label: "Landing Page Copy",
+    expectations: [
+      "Conversion-focused landing page copy layout.",
+      "Include headline, subheadline, core benefits, objections, offer details, proof elements, and CTA sections.",
+      "Provide concise copy blocks suitable for direct placement on a landing page.",
+      "Add at least two CTA variants and one urgency/risk-reversal block."
+    ]
+  },
+  "follow-up-email-sequence": {
+    label: "Follow-up Email Sequence",
+    expectations: [
+      "Create a sequence of 5 follow-up emails.",
+      "Each email must include: email number, purpose, subject line, preview text, and full body copy.",
+      "Vary angle across emails (education, story, objection handling, offer, urgency).",
+      "Keep each email skimmable with short paragraphs and clear CTA."
+    ]
+  },
+  "brand-kit-suggestions": {
+    label: "Brand Kit Suggestions",
+    expectations: [
+      "Present structured brand system recommendations.",
+      "Include brand voice attributes, messaging pillars, tagline ideas, headline ideas, and tone do/don't examples.",
+      "Provide at least three color palette options with hex codes.",
+      "Provide font pairing suggestions and logo concept prompts."
+    ]
+  }
+};
+
 export async function onRequestPost(context) {
   try {
     const { request, env } = context;
@@ -41,6 +108,9 @@ export async function onRequestPost(context) {
       }
     }
 
+    const normalizedMagnetType = normalizeMagnetType(magnetType);
+    const formatGuide = getFormatGuide(normalizedMagnetType);
+
     const systemPrompt = `
 You are an elite direct-response marketer, B2B brand strategist, lead generation copywriter, and conversion-focused content architect.
 
@@ -51,12 +121,6 @@ The output must:
 - Feel premium, polished, and authoritative
 - Be tailored to the user's business context
 - Be formatted as clean semantic HTML only
-- Include a strong headline
-- Include a compelling subheadline
-- Include an introduction
-- Include 5 to 10 actionable sections or steps
-- Include a short conclusion
-- Include a CTA section
 - Use simple inline-safe HTML structure that can later be styled or exported to PDF
 - Use short paragraphs
 - Use clear section headings
@@ -68,6 +132,10 @@ The output must:
 - Do not wrap the response in fenced code blocks
 - Do not wrap the output in backticks
 - Not include explanations before or after the HTML
+
+Selected output format: ${formatGuide.label}
+Format-specific requirements:
+${formatGuide.expectations.map((item) => `- ${item}`).join("\n")}
 
 The HTML should generally use:
 <section>, <div>, <h1>, <h2>, <h3>, <p>, <ul>, <li>, <strong>
@@ -88,7 +156,7 @@ Primary Goal:
 ${goal || "Not provided"}
 
 Lead Magnet Type:
-${magnetType || "guide"}
+${formatGuide.label}
 
 Return only polished HTML for the lead magnet.
 `.trim();
@@ -151,6 +219,15 @@ Return only polished HTML for the lead magnet.
       500
     );
   }
+}
+
+function normalizeMagnetType(value) {
+  const normalized = String(value || "guide").trim().toLowerCase();
+  return Object.hasOwn(FORMAT_GUIDES, normalized) ? normalized : "guide";
+}
+
+function getFormatGuide(magnetType) {
+  return FORMAT_GUIDES[magnetType] || FORMAT_GUIDES.guide;
 }
 
 export async function onRequestOptions() {
