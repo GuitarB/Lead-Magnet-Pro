@@ -779,7 +779,7 @@ body.export-mode #resultView #resultCard {
   <div class="mb-4 rounded-2xl border border-white/10 bg-slate-900/40 p-3 sm:p-4 no-print no-export">
     <p class="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Result actions</p>
     <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
-      <button id="previewResultBtn" type="button" class="result-action-btn result-action-btn--primary rounded-xl px-3 py-2.5 text-xs font-semibold">Refresh Preview</button>
+      <button id="previewResultBtn" type="button" class="result-action-btn result-action-btn--primary rounded-xl px-3 py-2.5 text-xs font-semibold">Preview Pages</button>
       <button id="downloadHtmlBtn" type="button" class="result-action-btn rounded-xl px-3 py-2.5 text-xs font-semibold">Download HTML</button>
       <button id="printPdfBtn" type="button" class="result-action-btn rounded-xl px-3 py-2.5 text-xs font-semibold">Export PDF</button>
       <button id="shareResultBtn" type="button" class="result-action-btn rounded-xl px-3 py-2.5 text-xs font-semibold">Share</button>
@@ -1655,7 +1655,7 @@ body.export-mode #resultView #resultCard {
         button.disabled = !enabled || loading;
       });
 
-      els.previewResultBtn.textContent = state.previewStatus === "failed" ? "Retry Preview" : (els.previewResultBtn.dataset.defaultLabel || "Refresh Preview");
+      els.previewResultBtn.textContent = state.previewStatus === "failed" ? "Retry Preview" : (els.previewResultBtn.dataset.defaultLabel || "Preview Pages");
       updatePreviewControls();
     }
 
@@ -1783,6 +1783,11 @@ body.export-mode #resultView #resultCard {
           lastUpdatedAt: new Date().toISOString()
         });
         logActionStep("preview", "state updated", { previewPagesLength: previewPages.length, pageCount });
+
+        const renderedPreviewPage = els.previewSwipeViewport.querySelector("[data-preview-page]");
+        if (!renderedPreviewPage) {
+          throw new Error("Preview pages were created but could not be rendered in the preview carousel.");
+        }
 
         setPreviewState("ready", { message: "Preview pages are ready." });
         updateDiagnostics({ lastActionStatus: "success", lastResponseSummary: JSON.stringify({ pageCount, previewPagesLength: previewPages.length }) });
@@ -1921,6 +1926,9 @@ body.export-mode #resultView #resultCard {
         anchor.click();
         document.body.removeChild(anchor);
         const opened = Boolean(window.open(absoluteUrl, "_blank", "noopener,noreferrer"));
+        if (!opened) {
+          window.location.assign(absoluteUrl);
+        }
 
         logActionStep("exportPdf", "navigation/download triggered", {
           downloadClicked: true,
@@ -2020,6 +2028,9 @@ body.export-mode #resultView #resultCard {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        if (!openResult) {
+          window.location.assign(fallbackUrl);
+        }
         await copyTextWithFallback(shareUrl);
         logActionStep("share", "fallback path used", { mode: "open-download-copy", windowOpenCalled: true, windowOpenSuccess: Boolean(openResult), downloadClicked: true });
         setStatus("ready", "Native share unavailable. Opened/downloaded PDF and copied link.");
