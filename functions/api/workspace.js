@@ -62,7 +62,7 @@ export async function onRequestGet(context) {
 
     const rows = await env.DB
       .prepare(
-        `SELECT brand_url, magnet_type, generated_html, created_at
+        `SELECT brand_url, magnet_type, generated_html, created_at, pdf_key
          FROM generations
          WHERE stripe_customer_id = ?
          ORDER BY created_at DESC
@@ -76,6 +76,8 @@ export async function onRequestGet(context) {
       magnetType: row.magnet_type || "guide",
       createdAt: row.created_at,
       generatedHtml: row.generated_html || "",
+      pdfKey: row.pdf_key || null,
+      pdfUrl: row.pdf_key ? `/api/pdf?key=${encodeURIComponent(row.pdf_key)}` : null,
       plan
     }));
 

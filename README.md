@@ -1,29 +1,35 @@
 # Lead-Magnet Pro
 
-Lead-Magnet Pro is a Cloudflare Pages SaaS that generates premium lead magnets with OpenAI.
-
-## What changed
-
-The app now supports subscription plans instead of a one-time unlock:
-
-- Free
-- Starter — $9/month (20 generations/month)
-- Builder — $19/month (75 generations/month)
-- Founder — $39/month (200 generations/month)
+Lead-Magnet Pro is a Cloudflare Pages SaaS that generates format-aware lead magnets with OpenAI and now renders true server-side PDFs.
 
 ## Architecture
 
-- **Frontend**: `index.html` (vanilla JS + Tailwind CDN)
-- **Checkout**: `functions/api/create-checkout-session.js` (Stripe subscription checkout)
-- **Session verification**: `functions/api/verify-session.js`
-- **Generation + limits**: `functions/api/generate.js`
-- **Workspace lookup**: `functions/api/workspace.js`
-- **Billing portal placeholder**: `functions/api/manage-billing.js`
+- **Frontend app**: `index.html` (vanilla JS + Tailwind CDN)
+- **Generate HTML**: `functions/api/generate.js`
+- **Render PDF (server-side)**: `functions/api/render-pdf.js`
+- **Fetch PDF from R2**: `functions/api/pdf.js`
+- **Workspace + history**: `functions/api/workspace.js`
+- **PDF template layer**: `functions/lib/pdf-template.js`
+- **Billing/checkout/session**: existing Stripe functions under `functions/api/*`
 - **Database schema**: `db/schema.sql` (Cloudflare D1)
 
-## Environment variables
+## Required bindings and environment
 
-Set these in Cloudflare Pages:
+### Bindings
+
+- `DB` (D1)
+- `PDF_BUCKET` (R2)
+- `BROWSER` (Cloudflare Browser Rendering)
+
+Browser Rendering binding is configured in `wrangler.jsonc`:
+
+```jsonc
+"browser": {
+  "binding": "BROWSER"
+}
+```
+
+### Environment variables
 
 - `OPENAI_API_KEY`
 - `STRIPE_SECRET_KEY`
@@ -32,23 +38,60 @@ Set these in Cloudflare Pages:
 - `STRIPE_PRICE_FOUNDER`
 - `SITE_URL` (optional; defaults to request origin)
 
-Also bind D1 to Pages Functions as `DB`.
+## PDF pipeline flow
+
+1. User generates HTML through `/api/generate`.
+2. Frontend calls `/api/render-pdf` with generation context + HTML.
+3. Server builds a dedicated standalone PDF document template (no dashboard chrome).
+4. Cloudflare Browser Rendering generates the PDF.
+5. PDF is uploaded to R2 (`PDF_BUCKET`) and key/path metadata is returned.
+6. `/api/pdf?key=...` streams the file inline or as download (`&download=1`).
+7. If the generation is tied to a saved paid generation row, `pdf_key` metadata is persisted in D1.
+
+## API endpoints
+
+### `POST /api/render-pdf`
+
+Accepts JSON:
+
+- `title`
+- `sourceUrl`
+- `leadMagnetType`
+- `audience`
+- `primaryGoal`
+- `generatedHtml`
+- optional metadata (`workspaceName`, `customerId`, `generationCreatedAt`)
+
+Returns:
+
+- `success`
+- `pdfKey`
+- `pdfUrl`
+- `pageCount`
+- `previewPages`
+
+### `GET /api/pdf?key=<R2 key>[&download=1]`
+
+- Streams PDF from R2 with `Content-Type: application/pdf`.
+- Uses inline disposition by default.
+- Uses attachment disposition when `download=1`.
 
 ## D1 setup
 
-Run the schema:
+Run schema:
 
 ```bash
 wrangler d1 execute <YOUR_DB_NAME> --file=db/schema.sql
 ```
 
-## User flow
+`generations` now includes `pdf_key` and `pdf_created_at` for reusing previously rendered PDFs in workspace history.
 
-1. User fills form and selects a plan.
-2. If paid plan is selected, app stores form values in `sessionStorage` and redirects to Stripe Checkout.
-3. On success return, app verifies checkout session server-side and restores inputs.
-4. Generation resumes automatically.
-5. Paid plans are enforced against monthly generation limits in D1, and successful generations are saved.
+## Deployment notes
+
+- Ensure Browser Rendering is enabled on your Cloudflare account.
+- Ensure `PDF_BUCKET` exists and is bound in Pages.
+- Ensure D1 schema includes the new PDF metadata columns.
+- Deploy both frontend and functions together so action buttons target the new PDF endpoints.
 
 ## Local dev
 
@@ -56,19 +99,3 @@ wrangler d1 execute <YOUR_DB_NAME> --file=db/schema.sql
 npm install
 npm run dev
 ```
-
-
-## Account-lite workspace access
-
-- Users can load a workspace by email (no password auth yet).
-- The dashboard shows plan, subscription status, billing window, usage, remaining generations, and recent saved generations.
-- Last loaded workspace email is persisted in `localStorage` and restored automatically.
-- Saved generations can be loaded back into the result panel from the workspace list.
-
-## Format-aware outputs and export actions
-
-- Generation is now format-aware and produces meaningfully different HTML deliverables for Ebook, Guide, Checklist, Worksheet, Landing Page Copy, Follow-up Email Sequence, and Brand Kit Suggestions.
-- The result panel includes an action row for Preview, Download HTML, Print / Save as PDF, Share (native when available), and Copy HTML.
-- Downloaded files now use cleaner names based on brand, output type, and date (for example: `bibleautointeriors-ebook-2026-03-09.html`).
-- Native share gracefully falls back when unavailable in the current browser/device.
-
