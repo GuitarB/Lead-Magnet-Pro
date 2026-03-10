@@ -134,10 +134,11 @@ function toStandaloneHtmlDocument({ documentTitle, generatedHtml, magnetType, br
       .document-shell { max-width: 8.5in; margin: 0 auto; padding: 0.4in; }
       h1,h2,h3 { color: #0f172a; margin: 0 0 14px; line-height: 1.25; }
       h1 { font-size: 30px; letter-spacing: -0.02em; }
-      h2 { font-size: 20px; }
-      h3 { font-size: 16px; }
+      h2 { font-size: 20px; break-after: avoid-page; page-break-after: avoid; }
+      h3 { font-size: 16px; break-after: avoid-page; page-break-after: avoid; }
+      h2 + p, h3 + p { break-inside: avoid; page-break-inside: avoid; }
       p,li { font-size: 12.5px; line-height: 1.62; color: #334155; }
-      ul,ol { padding-left: 20px; }
+      ul,ol,blockquote,.callout { padding-left: 20px; break-inside: avoid; page-break-inside: avoid; }
     </style>
   </head>
   <body>
