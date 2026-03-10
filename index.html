@@ -536,35 +536,15 @@ body.export-mode #generatedDocument {
                     </button>
                   </div>
                 </div>
-                <p class="mb-3 block text-sm font-medium text-slate-200">Select Plan</p>
-                <p class="mb-4 text-xs text-slate-400">
-                  Free gives one preview; paid plans unlock monthly generations and saved history.
-                </p>
-                <div id="planSelectorPanel" class="grid gap-3 sm:grid-cols-2">
-                  <label class="group rounded-2xl border border-white/10 bg-slate-950/70 p-4 text-sm text-slate-200 transition hover:border-brand-400/60 hover:bg-slate-900/80">
-                    <input type="radio" name="plan" value="free" class="h-4 w-4 accent-brand-500" checked />
-                    <span class="mt-3 block text-base font-semibold text-white">Free</span>
-                    <span class="mt-1 block text-xs uppercase tracking-[0.2em] text-slate-500">Preview</span>
-                    <span class="mt-2 block text-xs text-slate-400">One generated preview, no checkout required.</span>
-                  </label>
-                  <label class="group rounded-2xl border border-white/10 bg-slate-950/70 p-4 text-sm text-slate-200 transition hover:border-brand-400/60 hover:bg-slate-900/80">
-                    <input type="radio" name="plan" value="starter" class="h-4 w-4 accent-brand-500" />
-                    <span class="mt-3 block text-base font-semibold text-white">Starter</span>
-                    <span class="mt-1 block text-xs uppercase tracking-[0.2em] text-slate-500">$9/mo</span>
-                    <span class="mt-2 block text-xs text-slate-400">20 generations / month + saved history.</span>
-                  </label>
-                  <label class="group rounded-2xl border border-white/10 bg-slate-950/70 p-4 text-sm text-slate-200 transition hover:border-brand-400/60 hover:bg-slate-900/80">
-                    <input type="radio" name="plan" value="builder" class="h-4 w-4 accent-brand-500" />
-                    <span class="mt-3 block text-base font-semibold text-white">Builder</span>
-                    <span class="mt-1 block text-xs uppercase tracking-[0.2em] text-slate-500">$19/mo</span>
-                    <span class="mt-2 block text-xs text-slate-400">75 generations / month + saved history.</span>
-                  </label>
-                  <label class="group rounded-2xl border border-white/10 bg-slate-950/70 p-4 text-sm text-slate-200 transition hover:border-brand-400/60 hover:bg-slate-900/80">
-                    <input type="radio" name="plan" value="founder" class="h-4 w-4 accent-brand-500" />
-                    <span class="mt-3 block text-base font-semibold text-white">Founder</span>
-                    <span class="mt-1 block text-xs uppercase tracking-[0.2em] text-slate-500">$39/mo</span>
-                    <span class="mt-2 block text-xs text-slate-400">200 generations / month + saved history.</span>
-                  </label>
+                <p class="mb-3 block text-sm font-medium text-slate-200">Selected Plan</p>
+                <div id="planSelectorPanel" class="rounded-2xl border border-white/10 bg-slate-950/70 p-4">
+                  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p id="selectedPlanLabel" class="text-base font-semibold text-white">Free</p>
+                      <p id="selectedPlanMeta" class="mt-1 text-xs text-slate-400">One generated preview, no checkout required.</p>
+                    </div>
+                    <button id="choosePlanBtn" type="button" class="rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-xs font-semibold text-white transition hover:bg-white/20">Choose Plan</button>
+                  </div>
                 </div>
               </div>
 
@@ -825,6 +805,12 @@ body.export-mode #generatedDocument {
     const CHECKOUT_INTENT_KEY = "leadMagnetProCheckoutIntent";
     const WORKSPACE_EMAIL_KEY = "leadMagnetProWorkspaceEmail";
     const PAID_PLANS = new Set(["starter", "builder", "founder"]);
+    const PLAN_DETAILS = {
+      free: { label: "Free", meta: "One generated preview, no checkout required." },
+      starter: { label: "Starter", meta: "$9/mo · 20 generations per month with saved history." },
+      builder: { label: "Builder", meta: "$19/mo · 75 generations per month with saved history." },
+      founder: { label: "Founder", meta: "$39/mo · 200 generations per month with saved history." }
+    };
 
     const state = {
       currentView: "landing",
@@ -833,7 +819,7 @@ body.export-mode #generatedDocument {
       generatedHtml: "",
       workspace: null,
       isGenerating: false,
-      showPlanSelector: true,
+      isCheckoutPending: false,
       pricingOpen: false,
       accountOpen: false
     };
@@ -862,7 +848,9 @@ body.export-mode #generatedDocument {
       currentPlanSummaryMeta: document.getElementById("currentPlanSummaryMeta"),
       togglePlansBtn: document.getElementById("togglePlansBtn"),
       planSelectorPanel: document.getElementById("planSelectorPanel"),
-      planOptions: document.querySelectorAll('input[name="plan"]'),
+      selectedPlanLabel: document.getElementById("selectedPlanLabel"),
+      selectedPlanMeta: document.getElementById("selectedPlanMeta"),
+      choosePlanBtn: document.getElementById("choosePlanBtn"),
       statusPanel: document.getElementById("statusPanel"),
       statusBadge: document.getElementById("statusBadge"),
       statusText: document.getElementById("statusText"),
@@ -924,7 +912,6 @@ body.export-mode #generatedDocument {
       els.magnetType.value = state.form.magnetType || "guide";
       els.audience.value = state.form.audience || "";
       els.goal.value = state.form.goal || "";
-      els.planOptions.forEach((opt) => { opt.checked = opt.value === state.form.plan; });
       renderResultPreview();
       updateGenerateButtonLabel();
     }
@@ -974,22 +961,26 @@ body.export-mode #generatedDocument {
 
     function updatePlanSelectorVisibility() {
       const activePaidWorkspace = isWorkspaceActivePaid();
-      const shouldShowFullPlans = !activePaidWorkspace || state.showPlanSelector;
-
-      els.planSelectorPanel.classList.toggle("hidden", !shouldShowFullPlans);
       els.currentPlanSummary.classList.toggle("hidden", !activePaidWorkspace);
-      els.togglePlansBtn.textContent = shouldShowFullPlans ? "Hide Plans" : "Change Plan";
+      els.togglePlansBtn.textContent = "Change Plan";
 
       if (activePaidWorkspace) {
         els.currentPlanSummaryText.textContent = `${titleize(state.workspace.plan)} • Active`;
         els.currentPlanSummaryMeta.textContent = `${state.workspace.generationsRemaining} generations remaining this billing period.`;
       }
+
+      const selectedPlanDetails = PLAN_DETAILS[state.form.plan] || PLAN_DETAILS.free;
+      els.selectedPlanLabel.textContent = selectedPlanDetails.label;
+      els.selectedPlanMeta.textContent = selectedPlanDetails.meta;
     }
 
     function getGenerateButtonCopy() {
-      const activePaidForSelectedPlan = PAID_PLANS.has(state.form.plan)
+      const canGenerateWithWorkspace = isWorkspaceActivePaid();
+
+      const activePaidForSelectedPlan = (PAID_PLANS.has(state.form.plan)
         && state.subscription.active
-        && state.subscription.plan === state.form.plan;
+        && state.subscription.plan === state.form.plan)
+        || canGenerateWithWorkspace;
 
       if (state.isGenerating) {
         return { label: "Generating...", helper: "Please wait while we generate your lead magnet. Avoid refreshing this page." };
@@ -1016,7 +1007,7 @@ body.export-mode #generatedDocument {
       const copy = getGenerateButtonCopy();
       els.generateBtn.textContent = copy.label;
       els.generateBtnHelper.textContent = copy.helper;
-      els.generateBtn.disabled = state.isGenerating;
+      els.generateBtn.disabled = state.isGenerating || state.isCheckoutPending;
     }
 
     function setGeneratingState(isGenerating) {
@@ -1065,7 +1056,7 @@ body.export-mode #generatedDocument {
     }
 
     function updateNavCta() {
-      const hasWorkspace = Boolean(state.workspace);
+      const hasWorkspace = Boolean(state.workspace) || Boolean(els.workspaceEmail.value.trim());
       if (hasWorkspace) {
         els.navCtaBtn.innerHTML = '<span class="inline-flex items-center gap-2"><svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8a7 7 0 1 1 14 0H3Z"/></svg>Account</span>';
         els.navCtaBtn.className = "rounded-xl border border-white/15 bg-white/5 px-3.5 py-2 text-sm font-semibold text-slate-100 transition hover:bg-white/10 sm:px-4";
@@ -1082,9 +1073,10 @@ body.export-mode #generatedDocument {
       state.form.magnetType = els.magnetType.value;
       state.form.audience = els.audience.value.trim();
       state.form.goal = els.goal.value.trim();
-      state.form.plan = document.querySelector('input[name="plan"]:checked')?.value || "free";
+      console.log("[plan] selectedPlan", state.form.plan);
       saveFormState();
       updateGenerateButtonLabel();
+      updatePlanSelectorVisibility();
     }
 
     function renderResultPreview() {
@@ -1288,7 +1280,6 @@ body.export-mode #generatedDocument {
 
     function renderWorkspace(data) {
       state.workspace = data;
-      state.showPlanSelector = !isWorkspaceActivePaid(data);
       els.workspacePanel.classList.remove("hidden");
       els.workspacePlan.textContent = titleize(data.plan);
       els.workspaceStatus.textContent = titleize(data.subscriptionStatus || "inactive");
@@ -1334,7 +1325,8 @@ body.export-mode #generatedDocument {
 
       if (response.status === 404) {
         state.workspace = null;
-        state.showPlanSelector = true;
+        state.subscription = { active: false, plan: "free", customerId: "" };
+        sessionStorage.setItem(SUBSCRIPTION_KEY, JSON.stringify(state.subscription));
         updatePlanSelectorVisibility();
         updateGenerateButtonLabel();
         updateNavCta();
@@ -1358,7 +1350,6 @@ body.export-mode #generatedDocument {
 
       if (PAID_PLANS.has(result.plan)) {
         state.form.plan = result.plan;
-        els.planOptions.forEach((opt) => { opt.checked = opt.value === result.plan; });
       }
 
       renderWorkspace(result);
@@ -1373,7 +1364,6 @@ body.export-mode #generatedDocument {
       state.form.plan = generation.plan || state.form.plan;
       els.brandUrl.value = state.form.brandUrl;
       els.magnetType.value = state.form.magnetType;
-      els.planOptions.forEach((opt) => { opt.checked = opt.value === state.form.plan; });
       saveFormState();
       renderResultPreview();
       updateGenerateButtonLabel();
@@ -1416,17 +1406,48 @@ body.export-mode #generatedDocument {
     const validateForm = () => state.form.brandUrl || state.form.audience || state.form.goal;
 
     async function redirectToCheckout() {
-      saveFormState();
-      sessionStorage.setItem(CHECKOUT_INTENT_KEY, "pending");
-      setStatus("ready", "Redirecting to secure subscription checkout...");
-      const response = await fetch("/api/create-checkout-session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan: state.form.plan })
-      });
-      const result = await response.json();
-      if (!response.ok || !result.url) throw new Error(result.error || "Could not start checkout.");
-      window.location.href = result.url;
+      if (state.isCheckoutPending) return;
+      state.isCheckoutPending = true;
+      updateGenerateButtonLabel();
+
+      try {
+        saveFormState();
+        sessionStorage.setItem(CHECKOUT_INTENT_KEY, "pending");
+        setStatus("ready", "Redirecting to secure subscription checkout...");
+
+        const payload = {
+          plan: state.form.plan,
+          email: els.workspaceEmail.value.trim() || undefined,
+          customerId: state.workspace?.customerId || state.subscription.customerId || ""
+        };
+
+        console.log("[checkout] checkout button clicked", { selectedPlan: state.form.plan });
+        console.log("[checkout] request payload", payload);
+
+        const response = await fetch("/api/create-checkout-session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const result = await response.json();
+
+        console.log("[checkout] response payload", result);
+
+        if (!response.ok || !result.url) {
+          console.error("[checkout] checkout session error", result);
+          setStatus("error", result.error || "Could not start checkout.");
+          return;
+        }
+
+        console.log("[checkout] redirecting to", result.url);
+        window.location.href = result.url;
+      } catch (error) {
+        console.error("[checkout] checkout request failed", error);
+        setStatus("error", error.message || "Could not start checkout.");
+      } finally {
+        state.isCheckoutPending = false;
+        updateGenerateButtonLabel();
+      }
     }
 
     async function handleGenerate() {
@@ -1438,7 +1459,9 @@ body.export-mode #generatedDocument {
         return;
       }
 
+      const hasActivePaidWorkspace = isWorkspaceActivePaid();
       const needsCheckout = PAID_PLANS.has(state.form.plan)
+        && !hasActivePaidWorkspace
         && !(state.subscription.active && state.subscription.plan === state.form.plan);
       if (needsCheckout) {
         await redirectToCheckout();
@@ -1484,11 +1507,9 @@ body.export-mode #generatedDocument {
       sessionStorage.removeItem(CHECKOUT_INTENT_KEY);
       state.form = { brandUrl: "", fileName: "", magnetType: "guide", audience: "", goal: "", plan: "free" };
       state.workspace = null;
-      state.showPlanSelector = true;
       state.generatedHtml = "";
       setGeneratingState(false);
       els.leadForm.reset();
-      els.planOptions.forEach((opt) => { opt.checked = opt.value === "free"; });
       renderResultPreview();
       setResultActionsEnabled();
       buildPreviewPages();
@@ -1502,7 +1523,7 @@ body.export-mode #generatedDocument {
     }
 
     els.navCtaBtn.addEventListener("click", () => {
-      if (state.workspace) {
+      if (state.workspace || els.workspaceEmail.value.trim()) {
         openAccountPanel();
       } else {
         openPricingModal();
@@ -1533,7 +1554,7 @@ body.export-mode #generatedDocument {
         const plan = button.dataset.plan;
         if (plan) {
           state.form.plan = plan;
-          els.planOptions.forEach((opt) => { opt.checked = opt.value === plan; });
+          console.log("[plan] pricing modal selected plan", plan);
           syncStateFromForm();
           closePricingModal();
           setView("dashboard");
@@ -1541,7 +1562,7 @@ body.export-mode #generatedDocument {
       });
     });
 
-    [els.brandUrl, els.supportFile, els.magnetType, els.audience, els.goal, ...els.planOptions].forEach((input) => {
+    [els.brandUrl, els.supportFile, els.magnetType, els.audience, els.goal].forEach((input) => {
       ["input", "change"].forEach((eventName) => {
         input.addEventListener(eventName, () => {
           syncStateFromForm();
@@ -1565,8 +1586,11 @@ body.export-mode #generatedDocument {
     });
 
     els.togglePlansBtn.addEventListener("click", () => {
-      state.showPlanSelector = !state.showPlanSelector;
-      updatePlanSelectorVisibility();
+      openPricingModal();
+    });
+
+    els.choosePlanBtn.addEventListener("click", () => {
+      openPricingModal();
     });
 
     els.manageBillingBtn.addEventListener("click", async () => {
