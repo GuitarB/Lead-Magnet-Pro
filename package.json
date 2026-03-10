@@ -6,5 +6,8 @@
   "scripts": {
     "dev": "wrangler pages dev .",
     "deploy": "wrangler pages deploy ."
+  },
+  "dependencies": {
+    "@cloudflare/puppeteer": "^0.0.16"
   }
 }
