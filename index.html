@@ -143,6 +143,16 @@
   transition: all 0.18s ease;
 }
 
+.result-action-btn--primary {
+  border-color: rgba(99, 102, 241, 0.5);
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.85), rgba(99, 102, 241, 0.92));
+  color: #eef2ff;
+}
+
+.result-action-btn--primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, rgba(79, 70, 229, 1), rgba(129, 140, 248, 1));
+}
+
 .result-action-btn:hover:not(:disabled) {
   background: rgba(51, 65, 85, 0.65);
   color: #f8fafc;
@@ -151,6 +161,118 @@
 .result-action-btn:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+.doc-page-card {
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.95), rgba(241, 245, 249, 0.95));
+  color: #0f172a;
+  box-shadow: 0 14px 24px rgba(2, 6, 23, 0.22);
+}
+
+.doc-page-card .page-content {
+  max-height: 180px;
+  overflow: hidden;
+  position: relative;
+}
+
+.doc-page-card .page-content::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 44px;
+  background: linear-gradient(to bottom, rgba(248, 250, 252, 0), rgba(248, 250, 252, 0.98));
+}
+
+.print-only {
+  display: none;
+}
+
+body.export-mode > :not(main),
+body.export-mode #dashboardView,
+body.export-mode #landingView,
+body.export-mode #resultView .no-export,
+body.export-mode #resultView #resultMeta,
+body.export-mode #resultView #documentPreviewPanel {
+  display: none !important;
+}
+
+body.export-mode {
+  background: #fff !important;
+}
+
+body.export-mode #resultView,
+body.export-mode #resultView > div,
+body.export-mode #resultView #resultCard {
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+body.export-mode #generatedDocument {
+  max-width: 8.3in !important;
+  margin: 0 auto !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  padding: 0.5in !important;
+}
+
+@media print {
+  @page {
+    margin: 0.55in;
+  }
+
+  body {
+    background: #fff !important;
+  }
+
+  body > :not(main),
+  #dashboardView,
+  #landingView,
+  #resultView .no-print,
+  #resultMeta,
+  #documentPreviewPanel,
+  #resultView #editInputBtn,
+  #resultView #startOverBtn {
+    display: none !important;
+  }
+
+  #resultView,
+  #resultView > div,
+  #resultCard {
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  #generatedDocument {
+    max-width: none !important;
+    margin: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+
+  .generated-html {
+    color: #0f172a !important;
+  }
+
+  .print-only {
+    display: block !important;
+    margin-bottom: 1.1rem;
+    border-bottom: 1px solid #cbd5e1;
+    padding-bottom: 0.8rem;
+  }
 }
 
 @media (max-width: 640px) {
@@ -586,7 +708,7 @@
           </div>
 
          <div id="resultCard" class="rounded-3xl border border-white/10 bg-slate-950/20 p-3 sm:p-4 md:p-6">
-  <div class="mb-5 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+  <div id="resultMeta" class="mb-5 grid gap-2 sm:grid-cols-2 xl:grid-cols-4 no-print no-export">
     <div class="rounded-2xl border border-white/10 bg-slate-900/25 px-3 py-2.5">
       <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Source URL</p>
       <p id="resultBrandUrl" class="mt-2 break-all text-sm text-slate-200">—</p>
@@ -605,12 +727,23 @@
     </div>
   </div>
 
-  <div class="mb-4 flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-slate-900/40 p-2 sm:gap-2.5 sm:p-3">
-    <button id="previewResultBtn" type="button" class="result-action-btn rounded-lg px-3 py-2 text-xs font-semibold">Preview</button>
-    <button id="downloadHtmlBtn" type="button" class="result-action-btn rounded-lg px-3 py-2 text-xs font-semibold">Download HTML</button>
-    <button id="printPdfBtn" type="button" class="result-action-btn rounded-lg px-3 py-2 text-xs font-semibold">Print / Save PDF</button>
-    <button id="shareResultBtn" type="button" class="result-action-btn rounded-lg px-3 py-2 text-xs font-semibold">Share</button>
-    <button id="copyHtmlBtn" type="button" class="result-action-btn rounded-lg px-3 py-2 text-xs font-semibold">Copy HTML</button>
+  <div class="mb-4 rounded-2xl border border-white/10 bg-slate-900/40 p-3 sm:p-4 no-print no-export">
+    <p class="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Result actions</p>
+    <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+      <button id="previewResultBtn" type="button" class="result-action-btn result-action-btn--primary rounded-xl px-3 py-2.5 text-xs font-semibold">Preview Pages</button>
+      <button id="downloadHtmlBtn" type="button" class="result-action-btn rounded-xl px-3 py-2.5 text-xs font-semibold">Download HTML</button>
+      <button id="printPdfBtn" type="button" class="result-action-btn rounded-xl px-3 py-2.5 text-xs font-semibold">Export PDF</button>
+      <button id="shareResultBtn" type="button" class="result-action-btn rounded-xl px-3 py-2.5 text-xs font-semibold">Share</button>
+      <button id="copyHtmlBtn" type="button" class="result-action-btn rounded-xl px-3 py-2.5 text-xs font-semibold">Copy HTML</button>
+    </div>
+  </div>
+
+  <div id="documentPreviewPanel" class="mb-5 rounded-2xl border border-white/10 bg-slate-900/30 p-3 sm:p-4 no-print no-export">
+    <div class="mb-3 flex items-center justify-between gap-3">
+      <p class="text-sm font-semibold text-white">Document Preview</p>
+      <span id="previewPageCount" class="text-xs uppercase tracking-[0.15em] text-slate-400">0 pages</span>
+    </div>
+    <div id="documentPagePreview" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3"></div>
   </div>
 
   <div class="p-0.5 sm:p-1 md:p-2">
@@ -618,6 +751,7 @@
       id="generatedDocument"
       class="mx-auto w-full max-w-6xl rounded-2xl bg-white px-4 py-6 text-slate-900 shadow-2xl sm:px-8 sm:py-10 md:px-12 md:py-12"
     >
+      <div id="exportMeta" class="print-only"></div>
       <div class="prose-shell">
         <p class="text-sm uppercase tracking-[0.25em] text-brand-700">Sample Lead Magnet</p>
         <h1 class="mt-4 text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">
@@ -737,7 +871,11 @@
       resultMagnetType: document.getElementById("resultMagnetType"),
       resultAudience: document.getElementById("resultAudience"),
       resultPlan: document.getElementById("resultPlan"),
+      resultMeta: document.getElementById("resultMeta"),
       generatedDocument: document.getElementById("generatedDocument"),
+      exportMeta: document.getElementById("exportMeta"),
+      previewPageCount: document.getElementById("previewPageCount"),
+      documentPagePreview: document.getElementById("documentPagePreview"),
       previewResultBtn: document.getElementById("previewResultBtn"),
       downloadHtmlBtn: document.getElementById("downloadHtmlBtn"),
       printPdfBtn: document.getElementById("printPdfBtn"),
@@ -985,12 +1123,59 @@
       return `${getBrandSlugFromUrl(state.form.brandUrl)}-${getFormatSlug()}-${getExportDateStamp()}`;
     }
 
+    function getBrandLabel() {
+      return state.form.brandUrl || "your brand";
+    }
+
     function getDocumentTitle() {
-      return `${titleize(state.form.magnetType)} for ${state.form.brandUrl || "Your Brand"}`;
+      return `${titleize(state.form.magnetType)} for ${getBrandLabel()}`;
+    }
+
+    function getExportMetaBlock() {
+      return `<div style="font-family:Inter,system-ui,-apple-system,sans-serif;color:#0f172a;">
+        <p style="margin:0;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#475569;">Lead-Magnet Pro deliverable</p>
+        <h1 style="margin:6px 0 0;font-size:20px;line-height:1.25;">${getDocumentTitle()}</h1>
+        <p style="margin:6px 0 0;font-size:12px;color:#334155;">Generated ${getExportDateStamp()} · Format: ${titleize(state.form.magnetType)}</p>
+      </div>`;
     }
 
     function toStandaloneHtmlDocument() {
-      return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>${getDocumentTitle()}</title></head><body>${state.generatedHtml}</body></html>`;
+      return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>${getDocumentTitle()}</title><meta name="description" content="Generated ${titleize(state.form.magnetType)} for ${getBrandLabel()}" /><style>body{font-family:Inter,system-ui,-apple-system,sans-serif;background:#f8fafc;color:#0f172a;margin:0;padding:2rem}.document-shell{max-width:860px;margin:0 auto;background:#fff;border:1px solid #e2e8f0;border-radius:18px;box-shadow:0 12px 34px rgba(15,23,42,.09);padding:2.4rem}h1,h2,h3{color:#0f172a}p,li{color:#334155;line-height:1.75}.export-meta{margin-bottom:1.4rem;padding-bottom:1rem;border-bottom:1px solid #e2e8f0}.export-meta p{margin:.35rem 0 0;font-size:13px;color:#475569}@media print{@page{margin:.55in}body{background:#fff;padding:0}.document-shell{max-width:none;border:none;box-shadow:none;border-radius:0;padding:0}}</style></head><body><article class="document-shell"><div class="export-meta">${getExportMetaBlock()}</div>${state.generatedHtml}</article></body></html>`;
+    }
+
+    function buildPreviewPages() {
+      if (!state.generatedHtml) {
+        els.documentPagePreview.innerHTML = "";
+        els.previewPageCount.textContent = "0 pages";
+        return;
+      }
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(`<div>${state.generatedHtml}</div>`, "text/html");
+      const nodes = Array.from(doc.body.firstElementChild?.children || []);
+      const pages = [];
+      let current = [];
+      nodes.forEach((node) => {
+        if (["H1", "H2"].includes(node.tagName) && current.length) {
+          pages.push(current.join(""));
+          current = [];
+        }
+        current.push(node.outerHTML);
+      });
+      if (current.length) pages.push(current.join(""));
+      const safePages = pages.length ? pages : [state.generatedHtml];
+      const limited = safePages.slice(0, 6);
+      els.documentPagePreview.innerHTML = limited.map((page, index) => `<button type="button" class="doc-page-card w-full rounded-2xl p-3 text-left transition hover:-translate-y-0.5" data-page-target="${index + 1}"><p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Page ${index + 1}</p><div class="page-content mt-2 text-sm">${page}</div></button>`).join("");
+      els.previewPageCount.textContent = `${safePages.length} page${safePages.length === 1 ? "" : "s"}`;
+    }
+
+    function enterExportMode() {
+      document.body.classList.add("export-mode");
+      els.exportMeta.innerHTML = getExportMetaBlock();
+    }
+
+    function exitExportMode() {
+      document.body.classList.remove("export-mode");
+      els.exportMeta.innerHTML = "";
     }
 
     function setResultActionsEnabled() {
@@ -1001,6 +1186,7 @@
     }
 
     function handlePreviewResult() {
+      buildPreviewPages();
       els.generatedDocument.scrollIntoView({ behavior: "smooth", block: "start" });
       els.generatedDocument.classList.add("ring-2", "ring-brand-300", "ring-offset-2", "ring-offset-slate-900");
       setTimeout(() => {
@@ -1023,8 +1209,10 @@
 
     function handlePrintPdf() {
       handlePreviewResult();
-      setStatus("ready", "Use your browser print dialog to print or Save as PDF.");
+      enterExportMode();
+      setStatus("ready", "Export mode ready. Use print dialog to save a clean PDF.");
       window.print();
+      setTimeout(exitExportMode, 180);
     }
 
     async function handleCopyHtml() {
@@ -1039,7 +1227,7 @@
 
     async function handleShareResult() {
       const shareTitle = getDocumentTitle();
-      const summary = `Generated ${titleize(state.form.magnetType)} from ${state.form.brandUrl || "your brand"}.`;
+      const summary = `Polished ${titleize(state.form.magnetType)} deliverable for ${getBrandLabel()}.`;
       const fileName = `${getExportFilename()}.html`;
 
       try {
@@ -1193,7 +1381,9 @@
       state.generatedHtml = generation.generatedHtml || "";
       setResultActionsEnabled();
       if (state.generatedHtml) {
-        els.generatedDocument.innerHTML = `<div class="generated-html">${state.generatedHtml}</div>`;
+        els.generatedDocument.innerHTML = `<div id="exportMeta" class="print-only"></div><div class="generated-html">${state.generatedHtml}</div>`;
+        els.exportMeta = document.getElementById("exportMeta");
+        buildPreviewPages();
         setView("result");
       }
     }
@@ -1276,7 +1466,9 @@
         state.generatedHtml = result.html;
         renderResultPreview();
         setResultActionsEnabled();
-        els.generatedDocument.innerHTML = `<div class="generated-html">${state.generatedHtml}</div>`;
+        els.generatedDocument.innerHTML = `<div id="exportMeta" class="print-only"></div><div class="generated-html">${state.generatedHtml}</div>`;
+        els.exportMeta = document.getElementById("exportMeta");
+        buildPreviewPages();
         setStatus("success", "Lead magnet generated successfully. Scroll down to review your output.");
         closePricingModal();
         setView("result");
@@ -1293,11 +1485,13 @@
       state.form = { brandUrl: "", fileName: "", magnetType: "guide", audience: "", goal: "", plan: "free" };
       state.workspace = null;
       state.showPlanSelector = true;
+      state.generatedHtml = "";
       setGeneratingState(false);
       els.leadForm.reset();
       els.planOptions.forEach((opt) => { opt.checked = opt.value === "free"; });
       renderResultPreview();
       setResultActionsEnabled();
+      buildPreviewPages();
       updatePlanSelectorVisibility();
       updateGenerateButtonLabel();
       setStatus("idle", "Complete the fields and submit to prepare the generation payload.");
@@ -1384,6 +1578,11 @@
     });
 
     els.previewResultBtn.addEventListener("click", handlePreviewResult);
+    els.documentPagePreview.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-page-target]");
+      if (!button) return;
+      handlePreviewResult();
+    });
     els.downloadHtmlBtn.addEventListener("click", handleDownloadHtml);
     els.printPdfBtn.addEventListener("click", handlePrintPdf);
     els.shareResultBtn.addEventListener("click", handleShareResult);
@@ -1392,6 +1591,7 @@
     restoreFormState();
     renderResultPreview();
     setResultActionsEnabled();
+    buildPreviewPages();
     updatePlanSelectorVisibility();
     updateGenerateButtonLabel();
     updateNavCta();
