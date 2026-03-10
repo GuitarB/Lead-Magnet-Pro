@@ -24,6 +24,8 @@ export async function onRequest(context) {
     const { request, env } = context;
     const body = await request.json().catch(() => ({}));
 
+    const customerId = typeof body?.customerId === "string" ? body.customerId.trim() : "";
+
     const selectedPlan = String(body?.plan || "").toLowerCase();
     if (!PLAN_CONFIG[selectedPlan]) {
       return jsonResponse({ success: false, error: "Please choose a paid plan." }, 400);
@@ -50,7 +52,11 @@ export async function onRequest(context) {
     formData.set("metadata[plan]", selectedPlan);
     formData.set("subscription_data[metadata][plan]", selectedPlan);
 
-    if (body && typeof body.email === "string" && body.email.trim()) {
+    if (customerId) {
+      formData.set("customer", customerId);
+    }
+
+    if (!customerId && body && typeof body.email === "string" && body.email.trim()) {
       formData.set("customer_email", body.email.trim());
     }
 
