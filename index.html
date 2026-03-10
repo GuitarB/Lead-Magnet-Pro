@@ -215,19 +215,36 @@
   color: #0f172a;
   box-shadow: 0 14px 24px rgba(2, 6, 23, 0.18);
   overflow: hidden;
+  aspect-ratio: 8.5 / 11;
 }
 
 .preview-page__content {
-  font-size: 0.95rem;
-  line-height: 1.7;
-  padding: 1.1rem;
-  min-height: min(72vh, 560px);
+  font-size: 0.82rem;
+  line-height: 1.5;
+  padding: 0.85rem;
+  height: 100%;
   overflow: hidden;
 }
 
 .preview-page__content p,
 .preview-page__content li {
   color: #334155;
+}
+
+.preview-page__content .pdf-page {
+  margin: 0 !important;
+  box-shadow: none !important;
+  border: none !important;
+  min-height: auto !important;
+  height: 100%;
+}
+
+.preview-page__content .pdf-page-inner {
+  padding: 1.1rem !important;
+}
+
+.preview-page__content .page-footer {
+  padding: 0.55rem 1.1rem 0.8rem !important;
 }
 
 .print-only {
@@ -742,7 +759,7 @@ body.export-mode #resultView #resultCard {
       <button id="downloadHtmlBtn" type="button" class="result-action-btn rounded-xl px-3 py-2.5 text-xs font-semibold">Download HTML</button>
       <button id="printPdfBtn" type="button" class="result-action-btn rounded-xl px-3 py-2.5 text-xs font-semibold">Export PDF</button>
       <button id="shareResultBtn" type="button" class="result-action-btn rounded-xl px-3 py-2.5 text-xs font-semibold">Share</button>
-      <button id="copyHtmlBtn" type="button" class="result-action-btn rounded-xl px-3 py-2.5 text-xs font-semibold">Copy HTML</button>
+      <button id="copyHtmlBtn" type="button" class="result-action-btn rounded-xl px-3 py-2.5 text-xs font-semibold opacity-80">Copy HTML</button>
     </div>
   </div>
 
@@ -853,7 +870,8 @@ body.export-mode #resultView #resultCard {
       isGenerating: false,
       isCheckoutPending: false,
       pricingOpen: false,
-      accountOpen: false
+      accountOpen: false,
+      planSelectorForcedOpen: false
     };
 
     const els = {
@@ -996,10 +1014,13 @@ body.export-mode #resultView #resultCard {
 
     function updatePlanSelectorVisibility() {
       const activePaidWorkspace = isWorkspaceActivePaid();
-      const workspacePlanMatchesSelection = activePaidWorkspace && state.workspace.plan === state.form.plan;
-      const shouldShowPlanSelector = !activePaidWorkspace || !workspacePlanMatchesSelection;
+      if (activePaidWorkspace && !state.planSelectorForcedOpen) {
+        state.form.plan = state.workspace.plan;
+      }
+
+      const shouldShowPlanSelector = !activePaidWorkspace || state.planSelectorForcedOpen;
       els.currentPlanSummary.classList.toggle("hidden", !activePaidWorkspace);
-      els.togglePlansBtn.textContent = "Change Plan";
+      els.togglePlansBtn.textContent = shouldShowPlanSelector ? "Hide plans" : "Change plan";
       els.planSelectorPanel.classList.toggle("hidden", !shouldShowPlanSelector);
       els.selectedPlanHeading.classList.toggle("hidden", !shouldShowPlanSelector);
 
@@ -1281,7 +1302,7 @@ body.export-mode #resultView #resultCard {
       }
 
       state.previewPageIndex = Math.max(0, Math.min(state.previewPageIndex, pageCount - 1));
-      els.previewSwipeViewport.innerHTML = pages.map((page) => `<article class="preview-page" data-preview-page="${page.page}"><div class="preview-page__content generated-html">${page.html}</div></article>`).join("");
+      els.previewSwipeViewport.innerHTML = pages.map((page) => `<article class="preview-page" data-preview-page="${page.page}"><div class="preview-page__content">${page.html}</div></article>`).join("");
       updatePreviewControls();
       const activePage = els.previewSwipeViewport.children[state.previewPageIndex];
       if (activePage) {
@@ -1359,6 +1380,15 @@ body.export-mode #resultView #resultCard {
     function toAbsoluteUrl(url) {
       if (!url) return "";
       return new URL(url, window.location.origin).toString();
+    }
+
+    function humanizeApiError(message = "", details = "") {
+      const text = `${message} ${details}`.toLowerCase();
+      if (text.includes("pdf_bucket")) return "PDF storage is not configured (missing R2 PDF_BUCKET binding).";
+      if (text.includes("d1") || text.includes("db")) return "Database binding is missing (D1 DB).";
+      if (text.includes("cloudflare_account_id") || text.includes("cloudflare_api_token") || text.includes("browser rendering")) return "Browser Rendering credentials are missing or invalid.";
+      if (text.includes("pdf not found")) return "Generated PDF was not found in storage. Please try exporting again.";
+      return message || details || "Unknown server error.";
     }
 
     function movePreviewPage(direction) {
@@ -1457,7 +1487,7 @@ body.export-mode #resultView #resultCard {
       console.log("[action:pdf] request success", result);
       if (!response.ok || !result.success) {
         console.error("[action:pdf] failure response", { endpoint: "/api/render-pdf", status: response.status, result });
-        throw new Error(result.error || result.details || "Unable to render PDF.");
+        throw new Error(humanizeApiError(result.error, result.details));
       }
 
       setCanonicalResult({ ...canonical, ...result, html: canonical.html });
@@ -1472,25 +1502,29 @@ body.export-mode #resultView #resultCard {
         const pdf = await ensureRenderedPdf();
         const absoluteUrl = toAbsoluteUrl(pdf.pdfUrl);
         console.log("[action:exportPdf] request started", { endpoint: "/api/pdf", absoluteUrl });
-        try {
-          const verifyResponse = await fetch(absoluteUrl, { method: "GET" });
-          if (!verifyResponse.ok) {
-            throw new Error(`PDF endpoint returned ${verifyResponse.status}.`);
-          }
-        } catch (error) {
-          console.error("[action:exportPdf] request failed", { endpoint: "/api/pdf", error });
-          throw new Error(`Network error calling /api/pdf: ${error.message || "Unknown error"}`);
+
+        const pdfResponse = await fetch(absoluteUrl, { method: "GET" });
+        if (!pdfResponse.ok) {
+          throw new Error(`PDF endpoint returned ${pdfResponse.status}.`);
         }
-        const separator = absoluteUrl.includes("?") ? "&" : "?";
-        const downloadUrl = `${absoluteUrl}${separator}download=1`;
-        const anchor = document.createElement("a");
-        anchor.href = downloadUrl;
-        anchor.target = "_blank";
-        anchor.rel = "noopener noreferrer";
-        document.body.appendChild(anchor);
-        anchor.click();
-        document.body.removeChild(anchor);
-        console.log("[action:exportPdf] request success", { downloadUrl });
+
+        const blob = await pdfResponse.blob();
+        const objectUrl = URL.createObjectURL(blob);
+        const isMobile = /android|iphone|ipad|ipod/i.test(navigator.userAgent || "");
+
+        if (isMobile) {
+          window.open(absoluteUrl, "_blank", "noopener,noreferrer");
+        } else {
+          const anchor = document.createElement("a");
+          anchor.href = objectUrl;
+          anchor.download = `${getExportFilename()}.pdf`;
+          document.body.appendChild(anchor);
+          anchor.click();
+          document.body.removeChild(anchor);
+        }
+
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 1500);
+        console.log("[action:exportPdf] request success", { bytes: blob.size });
         updateActionState("exportPdf", "success", "PDF exported successfully.");
       } catch (error) {
         console.error("[action:exportPdf] error", error);
@@ -1539,51 +1573,45 @@ body.export-mode #resultView #resultCard {
     async function handleShareResult() {
       console.log("[action:share] click", { generationId: getCanonicalResult().generationId });
       setActionButtonLoading(els.shareResultBtn, true, "Sharing...");
-      updateActionState("share", "loading", "Preparing share link...");
+      updateActionState("share", "loading", "Preparing PDF to share...");
       try {
         const pdf = await ensureRenderedPdf();
         const shareUrl = toAbsoluteUrl(pdf.pdfUrl);
         if (!shareUrl) throw new Error("PDF link is unavailable.");
-        console.log("[action:share] request started", { endpoint: "/api/pdf", shareUrl });
-        let pdfBlob;
-        try {
-          const pdfResponse = await fetch(shareUrl, { method: "GET" });
-          if (!pdfResponse.ok) {
-            throw new Error(`PDF endpoint returned ${pdfResponse.status}.`);
-          }
-          pdfBlob = await pdfResponse.blob();
-        } catch (error) {
-          console.error("[action:share] request failed", { endpoint: "/api/pdf", error });
-          throw new Error(`Network error calling /api/pdf: ${error.message || "Unknown error"}`);
+
+        const pdfResponse = await fetch(shareUrl, { method: "GET" });
+        if (!pdfResponse.ok) {
+          throw new Error(`PDF endpoint returned ${pdfResponse.status}.`);
         }
-        console.log("[action:share] request success", { bytes: pdfBlob.size });
+        const pdfBlob = await pdfResponse.blob();
+        const filename = `${getExportFilename()}.pdf`;
+        const file = new File([pdfBlob], filename, { type: "application/pdf" });
 
         if (navigator.share) {
-          const filename = `${getExportFilename()}.pdf`;
-          const file = new File([pdfBlob], filename, { type: "application/pdf" });
-          const canSharePdfFile = navigator.canShare && navigator.canShare({ files: [file] });
-          const shareData = {
+          const baseData = {
             title: getDocumentTitle(),
-            text: `Polished ${titleize(getCanonicalResult().format)} deliverable for ${getBrandLabel()}.`,
-            files: canSharePdfFile ? [file] : undefined,
-            url: shareUrl
+            text: `Polished ${titleize(getCanonicalResult().format)} deliverable for ${getBrandLabel()}.`
           };
+          const canSharePdfFile = Boolean(navigator.canShare && navigator.canShare({ files: [file] }));
+
           try {
-            await navigator.share(shareData);
-            updateActionState("share", "success", "Shared successfully.");
+            if (canSharePdfFile) {
+              await navigator.share({ ...baseData, files: [file] });
+              updateActionState("share", "success", "Shared PDF file successfully.");
+              return;
+            }
+
+            await navigator.share({ ...baseData, url: shareUrl });
+            updateActionState("share", "success", "Shared PDF link successfully.");
             return;
           } catch (error) {
-            if (error?.name === "AbortError") {
-              throw error;
-            }
-            console.warn("[action:share] fallback used", { strategy: "copy-and-open-url", reason: "navigator.share failed", error });
+            if (error?.name === "AbortError") throw error;
+            console.warn("[action:share] navigator.share failed", error);
           }
         }
 
-        console.log("[action:share] fallback used", { strategy: "copy-and-open-url" });
         await copyTextWithFallback(shareUrl);
-        window.open(shareUrl, "_blank", "noopener,noreferrer");
-        updateActionState("share", "success", "Share URL copied and opened.");
+        updateActionState("share", "success", "Native share unavailable. PDF URL copied to clipboard.");
       } catch (error) {
         console.error("[action:share] error", error);
         if (error?.name === "AbortError") {
@@ -1698,6 +1726,7 @@ body.export-mode #resultView #resultCard {
 
       if (PAID_PLANS.has(result.plan)) {
         state.form.plan = result.plan;
+        state.planSelectorForcedOpen = false;
       }
       renderWorkspace(result);
       updatePlanSelectorVisibility();
@@ -1709,6 +1738,7 @@ body.export-mode #resultView #resultCard {
       state.form.brandUrl = generation.brandUrl || "";
       state.form.magnetType = generation.magnetType || "guide";
       state.form.plan = generation.plan || state.form.plan;
+      state.planSelectorForcedOpen = false;
       els.brandUrl.value = state.form.brandUrl;
       els.magnetType.value = state.form.magnetType;
       saveFormState();
@@ -1900,6 +1930,7 @@ body.export-mode #resultView #resultCard {
         const plan = button.dataset.plan;
         if (plan) {
           state.form.plan = plan;
+          state.planSelectorForcedOpen = false;
           console.log("[plan] pricing modal selected plan", plan);
           syncStateFromForm();
           closePricingModal();
@@ -1932,10 +1963,13 @@ body.export-mode #resultView #resultCard {
     });
 
     els.togglePlansBtn.addEventListener("click", () => {
-      openPricingModal();
+      state.planSelectorForcedOpen = !state.planSelectorForcedOpen;
+      updatePlanSelectorVisibility();
     });
 
     els.choosePlanBtn.addEventListener("click", () => {
+      state.planSelectorForcedOpen = true;
+      updatePlanSelectorVisibility();
       openPricingModal();
     });
 
