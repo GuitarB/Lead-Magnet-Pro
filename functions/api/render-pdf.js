@@ -1,13 +1,11 @@
+import { requestBrowserRenderingPdf, toPreviewErrorResponse } from "../lib/browser-rendering";
+
 export async function onRequestPost(context) {
   try {
     const { request, env } = context;
 
     if (!env.PDF_BUCKET) {
       return jsonResponse({ success: false, error: "Missing PDF_BUCKET binding. Configure R2 PDF_BUCKET in wrangler." }, 500);
-    }
-
-    if (!env.CLOUDFLARE_ACCOUNT_ID || !env.CLOUDFLARE_API_TOKEN) {
-      return jsonResponse({ success: false, error: "Missing Cloudflare Browser Rendering secrets (CLOUDFLARE_ACCOUNT_ID/CLOUDFLARE_API_TOKEN)." }, 500);
     }
 
     const contentType = request.headers.get("content-type") || "";
@@ -35,36 +33,8 @@ export async function onRequestPost(context) {
       brandUrl
     });
 
-    const pdfResponse = await fetch(
-      `https://api.cloudflare.com/client/v4/accounts/${env.CLOUDFLARE_ACCOUNT_ID}/browser-rendering/pdf`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${env.CLOUDFLARE_API_TOKEN}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          html: standaloneHtml,
-          options: {
-            printBackground: true,
-            preferCSSPageSize: true
-          }
-        })
-      }
-    );
-
-    if (!pdfResponse.ok) {
-      return jsonResponse(
-        {
-          success: false,
-          error: "Cloudflare Browser Rendering PDF request failed.",
-          details: await pdfResponse.text()
-        },
-        502
-      );
-    }
-
-    const pdfBytes = await pdfResponse.arrayBuffer();
+    const renderResult = await requestBrowserRenderingPdf({ env, html: standaloneHtml });
+    const pdfBytes = renderResult.bytes;
     const pdfKey = buildPdfKey({ customerId, brandUrl, magnetType });
     await env.PDF_BUCKET.put(pdfKey, pdfBytes, {
       httpMetadata: {
@@ -74,8 +44,10 @@ export async function onRequestPost(context) {
     });
 
     if (env.DB && generationId) {
-      await persistPdfMetadata(env.DB, generationId, pdfKey);
+      await persistPdfMetadata(env.DB, generationId, { pdfKey, previewPages: paginatedDocument.previewPages });
     }
+
+    console.log(`[preview] preview render succeeded: ${paginatedDocument.previewPages.length} pages`);
 
     return jsonResponse({
       success: true,
@@ -87,14 +59,8 @@ export async function onRequestPost(context) {
       generationId
     });
   } catch (error) {
-    return jsonResponse(
-      {
-        success: false,
-        error: "Failed to render PDF.",
-        details: error instanceof Error ? error.message : String(error)
-      },
-      500
-    );
+    const status = error?.code === "BROWSER_AUTH_FAILED" ? 401 : error?.code?.startsWith("BROWSER") ? 500 : 502;
+    return jsonResponse(toPreviewErrorResponse(error, "PREVIEW_RENDER_FAILED"), status);
   }
 }
 
@@ -102,19 +68,44 @@ export async function onRequestOptions() {
   return new Response(null, { status: 204, headers: corsHeaders() });
 }
 
-async function persistPdfMetadata(db, generationId, pdfKey) {
+async function persistPdfMetadata(db, generationId, payload) {
   const info = await db.prepare("PRAGMA table_info(generations)").all();
   const columns = new Set((info?.results || []).map((column) => column.name));
-  if (!columns.has("pdf_key") || !columns.has("pdf_created_at")) return;
-
   const nowIso = new Date().toISOString();
+
+  const updates = [];
+  const values = [];
+
+  if (columns.has("pdf_key")) {
+    updates.push("pdf_key = ?");
+    values.push(payload.pdfKey);
+  }
+  if (columns.has("pdf_created_at")) {
+    updates.push("pdf_created_at = ?");
+    values.push(nowIso);
+  }
+  if (columns.has("preview_pages_json")) {
+    updates.push("preview_pages_json = ?");
+    values.push(JSON.stringify(payload.previewPages || []));
+  }
+  if (columns.has("preview_page_count")) {
+    updates.push("preview_page_count = ?");
+    values.push(Array.isArray(payload.previewPages) ? payload.previewPages.length : 0);
+  }
+  if (columns.has("preview_updated_at")) {
+    updates.push("preview_updated_at = ?");
+    values.push(nowIso);
+  }
+
+  if (!updates.length) return;
+
   await db
     .prepare(
       `UPDATE generations
-       SET pdf_key = ?, pdf_created_at = ?
+       SET ${updates.join(", ")}
        WHERE id = ?`
     )
-    .bind(pdfKey, nowIso, generationId)
+    .bind(...values, generationId)
     .run();
 }
 

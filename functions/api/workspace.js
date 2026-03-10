@@ -64,10 +64,11 @@ export async function onRequestGet(context) {
     const generationTableInfo = await env.DB.prepare("PRAGMA table_info(generations)").all();
     const generationColumns = new Set((generationTableInfo?.results || []).map((column) => column.name));
     const hasPdfColumns = generationColumns.has("pdf_key") && generationColumns.has("pdf_created_at");
+    const hasPreviewColumns = generationColumns.has("preview_pages_json") && generationColumns.has("preview_page_count");
 
     const rows = await env.DB
       .prepare(
-        `SELECT id, brand_url, magnet_type, generated_html, created_at${hasPdfColumns ? ', pdf_key, pdf_created_at' : ''}
+        `SELECT id, brand_url, magnet_type, generated_html, created_at${hasPdfColumns ? ', pdf_key, pdf_created_at' : ''}${hasPreviewColumns ? ', preview_pages_json, preview_page_count, preview_updated_at' : ''}
          FROM generations
          WHERE stripe_customer_id = ?
          ORDER BY created_at DESC
@@ -76,21 +77,33 @@ export async function onRequestGet(context) {
       .bind(customer.stripe_customer_id)
       .all();
 
-    const recentGenerations = (rows?.results || []).map((row) => ({
-      id: row.id,
-      generationId: row.id,
-      brandUrl: row.brand_url || "",
-      magnetType: row.magnet_type || "guide",
-      createdAt: row.created_at,
-      generatedHtml: row.generated_html || "",
-      html: row.generated_html || "",
-      pdfKey: hasPdfColumns ? row.pdf_key || null : null,
-      pdfUrl: hasPdfColumns && row.pdf_key ? `/api/pdf?key=${encodeURIComponent(row.pdf_key)}` : null,
-      pageCount: 0,
-      previewPages: [],
-      pdfCreatedAt: hasPdfColumns ? row.pdf_created_at || null : null,
-      plan
-    }));
+    const recentGenerations = (rows?.results || []).map((row) => {
+      let previewPages = [];
+      if (hasPreviewColumns && row.preview_pages_json) {
+        try {
+          previewPages = JSON.parse(row.preview_pages_json);
+        } catch {
+          previewPages = [];
+        }
+      }
+
+      return {
+        id: row.id,
+        generationId: row.id,
+        brandUrl: row.brand_url || "",
+        magnetType: row.magnet_type || "guide",
+        createdAt: row.created_at,
+        generatedHtml: row.generated_html || "",
+        html: row.generated_html || "",
+        pdfKey: hasPdfColumns ? row.pdf_key || null : null,
+        pdfUrl: hasPdfColumns && row.pdf_key ? `/api/pdf?key=${encodeURIComponent(row.pdf_key)}` : null,
+        pageCount: hasPreviewColumns ? Number(row.preview_page_count || 0) : 0,
+        previewPages,
+        previewUpdatedAt: hasPreviewColumns ? row.preview_updated_at || null : null,
+        pdfCreatedAt: hasPdfColumns ? row.pdf_created_at || null : null,
+        plan
+      };
+    });
 
     return jsonResponse({
       success: true,
