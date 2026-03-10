@@ -761,6 +761,7 @@ body.export-mode #resultView #resultCard {
       <button id="shareResultBtn" type="button" class="result-action-btn rounded-xl px-3 py-2.5 text-xs font-semibold">Share</button>
       <button id="copyHtmlBtn" type="button" class="result-action-btn rounded-xl px-3 py-2.5 text-xs font-semibold opacity-80">Copy HTML</button>
     </div>
+    <p id="resultActionHelper" class="mt-3 text-xs text-slate-400"></p>
   </div>
 
   <div id="documentPreviewPanel" class="mb-5 rounded-2xl border border-white/10 bg-slate-900/30 p-3 sm:p-4 no-print no-export">
@@ -857,8 +858,11 @@ body.export-mode #resultView #resultCard {
       resultDocument: null,
       previewPages: [],
       previewPageIndex: 0,
-      previewLoading: false,
-      previewError: "",
+      previewStatus: "idle",
+      previewMessage: "",
+      previewDebugDetails: "",
+      renderingAvailable: null,
+      renderingErrorCode: "",
       actionState: {
         preview: "idle",
         downloadHtml: "idle",
@@ -922,6 +926,7 @@ body.export-mode #resultView #resultCard {
       printPdfBtn: document.getElementById("printPdfBtn"),
       shareResultBtn: document.getElementById("shareResultBtn"),
       copyHtmlBtn: document.getElementById("copyHtmlBtn"),
+      resultActionHelper: document.getElementById("resultActionHelper"),
       workspaceEmail: document.getElementById("workspaceEmail"),
       loadWorkspaceBtn: document.getElementById("loadWorkspaceBtn"),
       workspaceMessage: document.getElementById("workspaceMessage"),
@@ -1182,7 +1187,19 @@ body.export-mode #resultView #resultCard {
         pageCount: state.resultDocument.pageCount
       });
       buildPreviewPages();
+      if (!state.previewPages.length && state.resultDocument.html) {
+        setPreviewState("idle", { message: "Preparing preview automatically..." });
+      }
       setResultActionsEnabled();
+    }
+
+    function maybeAutoBuildPreview(source = "auto") {
+      const canonical = getCanonicalResult();
+      if (!canonical.html || state.previewPages.length || state.previewStatus === "building") return;
+      setPreviewState("building", { message: "Building preview..." });
+      handlePreviewResult({ force: !canonical.pdfUrl, source }).catch((error) => {
+        console.error("[preview] auto build failed", error);
+      });
     }
 
     function resetActionState(action) {
@@ -1274,29 +1291,53 @@ body.export-mode #resultView #resultCard {
     function updatePreviewControls() {
       const pageCount = state.previewPages.length;
       els.previewActivePage.textContent = pageCount ? `Page ${state.previewPageIndex + 1} / ${pageCount}` : "Page 0 / 0";
-      els.previewPrevBtn.disabled = !pageCount || state.previewPageIndex === 0;
-      els.previewNextBtn.disabled = !pageCount || state.previewPageIndex >= pageCount - 1;
+      const canNavigate = state.previewStatus === "ready" && pageCount > 0;
+      els.previewPrevBtn.disabled = !canNavigate || state.previewPageIndex === 0;
+      els.previewNextBtn.disabled = !canNavigate || state.previewPageIndex >= pageCount - 1;
+    }
+
+    function setPreviewState(status, options = {}) {
+      state.previewStatus = status;
+      state.previewMessage = options.message || "";
+      state.previewDebugDetails = options.details || "";
+      if (status === "failed") {
+        state.renderingAvailable = false;
+        state.renderingErrorCode = options.errorCode || "";
+      }
+      if (status === "ready") {
+        state.renderingAvailable = true;
+        state.renderingErrorCode = "";
+      }
+      renderPreviewCarousel();
+      setResultActionsEnabled();
     }
 
     function renderPreviewCarousel() {
       const pages = state.previewPages;
       const pageCount = pages.length;
       els.previewPageCount.textContent = `${pageCount} page${pageCount === 1 ? "" : "s"}`;
-      if (state.previewLoading) {
-        els.previewSwipeViewport.innerHTML = '<div class="preview-page"><div class="preview-page__content"><p>Building paginated preview from the server PDF pipeline…</p></div></div>';
+
+      if (state.previewStatus === "building") {
+        els.previewSwipeViewport.innerHTML = '<div class="preview-page"><div class="preview-page__content"><p class="font-semibold">Building preview…</p><p class="mt-2 text-slate-600">We&amp;rsquo;re preparing true paginated pages from the server PDF pipeline.</p></div></div>';
         updatePreviewControls();
         return;
       }
 
-      if (state.previewError) {
-        els.previewSwipeViewport.innerHTML = `<div class="preview-page"><div class="preview-page__content"><p>Preview build failed: ${state.previewError}</p></div></div>`;
+      if (state.previewStatus === "failed") {
+        const details = state.previewDebugDetails ? `<details class="mt-3 text-xs text-slate-500"><summary>Details</summary><p class="mt-2">${state.previewDebugDetails}</p></details>` : "";
+        els.previewSwipeViewport.innerHTML = `<div class="preview-page"><div class="preview-page__content"><p class="font-semibold">Preview unavailable right now.</p><p class="mt-2 text-slate-600">We couldn’t connect to the PDF rendering service.</p><button type="button" id="retryPreviewInlineBtn" class="result-action-btn mt-4 rounded-lg px-3 py-2 text-xs font-semibold">Retry Preview</button>${details}</div></div>`;
+        const retryBtn = document.getElementById("retryPreviewInlineBtn");
+        if (retryBtn) retryBtn.addEventListener("click", () => handlePreviewResult({ force: true, source: "inline" }));
         updatePreviewControls();
         return;
       }
 
       if (!pageCount) {
         const canonical = getCanonicalResult();
-        els.previewSwipeViewport.innerHTML = `<div class="preview-page"><div class="preview-page__content"><p>${canonical.html ? "Preview pages are not ready yet. Tap “Preview Pages” to build them from the server PDF pipeline." : "No generated content yet. Generate a lead magnet to see preview pages."}</p></div></div>`;
+        const idleMessage = canonical.html
+          ? "Preparing preview automatically…"
+          : "No generated content yet. Generate a lead magnet to see preview pages.";
+        els.previewSwipeViewport.innerHTML = `<div class="preview-page"><div class="preview-page__content"><p>${idleMessage}</p></div></div>`;
         updatePreviewControls();
         return;
       }
@@ -1314,16 +1355,14 @@ body.export-mode #resultView #resultCard {
       const canonical = getCanonicalResult();
       const serverPages = normalizePreviewPages(canonical.previewPages || []);
       state.previewPages = serverPages;
-      state.previewError = "";
       if (canonical.pageCount && state.previewPages.length && state.previewPages.length !== canonical.pageCount) {
         console.log("[preview] page count mismatch", { canonical: canonical.pageCount, built: state.previewPages.length });
       }
-      renderPreviewCarousel();
-    }
-
-    function setPreviewLoading(isLoading) {
-      state.previewLoading = isLoading;
-      renderPreviewCarousel();
+      if (state.previewPages.length) {
+        setPreviewState("ready");
+      } else if (!canonical.html) {
+        setPreviewState("idle");
+      }
     }
 
     function setActionButtonLoading(button, isLoading, loadingText) {
@@ -1337,15 +1376,25 @@ body.export-mode #resultView #resultCard {
 
     function setResultActionsEnabled() {
       const enabled = Boolean(getCanonicalResult().html);
-      [els.previewResultBtn, els.downloadHtmlBtn, els.printPdfBtn, els.shareResultBtn, els.copyHtmlBtn].forEach((button) => {
+      const renderUnavailable = state.renderingAvailable === false;
+      [els.previewResultBtn, els.downloadHtmlBtn, els.copyHtmlBtn].forEach((button) => {
         if (!button) return;
         if (button.dataset.defaultLabel) {
           button.textContent = button.dataset.defaultLabel;
         }
         button.disabled = !enabled;
       });
-      els.previewPrevBtn.disabled = !state.previewPages.length || state.previewPageIndex === 0;
-      els.previewNextBtn.disabled = !state.previewPages.length || state.previewPageIndex >= state.previewPages.length - 1;
+
+      els.printPdfBtn.disabled = !enabled || renderUnavailable;
+      els.shareResultBtn.disabled = !enabled || renderUnavailable;
+      els.printPdfBtn.title = renderUnavailable ? "Export unavailable: PDF rendering service is not configured." : "";
+      els.shareResultBtn.title = renderUnavailable ? "Share unavailable: PDF rendering service is not configured." : "";
+
+      els.previewResultBtn.textContent = state.previewStatus === "failed" ? "Retry Preview" : (els.previewResultBtn.dataset.defaultLabel || "Preview Pages");
+      els.resultActionHelper.textContent = renderUnavailable
+        ? "Export PDF and Share are unavailable until Browser Rendering is configured."
+        : "";
+      updatePreviewControls();
     }
 
     async function safeJson(response) {
@@ -1382,13 +1431,22 @@ body.export-mode #resultView #resultCard {
       return new URL(url, window.location.origin).toString();
     }
 
-    function humanizeApiError(message = "", details = "") {
+    function humanizeApiError(payload = {}) {
+      const code = payload?.errorCode || "";
+      if (code === "BROWSER_RENDERING_NOT_CONFIGURED" || code === "BROWSER_BINDING_MISSING" || code === "BROWSER_ACCOUNT_ID_MISSING" || code === "BROWSER_API_TOKEN_MISSING") {
+        return "Preview unavailable right now. Browser Rendering is not configured.";
+      }
+      if (code === "BROWSER_AUTH_FAILED") {
+        return "Preview unavailable right now. Browser Rendering credentials were rejected.";
+      }
+
+      const message = payload?.error || "";
+      const details = payload?.details || "";
       const text = `${message} ${details}`.toLowerCase();
       if (text.includes("pdf_bucket")) return "PDF storage is not configured (missing R2 PDF_BUCKET binding).";
       if (text.includes("d1") || text.includes("db")) return "Database binding is missing (D1 DB).";
-      if (text.includes("cloudflare_account_id") || text.includes("cloudflare_api_token") || text.includes("browser rendering")) return "Browser Rendering credentials are missing or invalid.";
       if (text.includes("pdf not found")) return "Generated PDF was not found in storage. Please try exporting again.";
-      return message || details || "Unknown server error.";
+      return payload?.userMessage || message || details || "Unknown server error.";
     }
 
     function movePreviewPage(direction) {
@@ -1397,28 +1455,29 @@ body.export-mode #resultView #resultCard {
       renderPreviewCarousel();
     }
 
-    async function handlePreviewResult() {
-      console.log("[action:preview] click", { generationId: getCanonicalResult().generationId });
-      setActionButtonLoading(els.previewResultBtn, true, "Loading...");
-      updateActionState("preview", "loading", "Preparing PDF preview pages...");
+    async function handlePreviewResult({ force = true, source = "button" } = {}) {
+      console.log("[action:preview] trigger", { generationId: getCanonicalResult().generationId, force, source });
+      setActionButtonLoading(els.previewResultBtn, true, "Building...");
+      updateActionState("preview", "loading", "Building paginated preview...");
       try {
-        setPreviewLoading(true);
-        state.previewError = "";
-        await ensureRenderedPdf();
+        setPreviewState("building", { message: "Building preview..." });
+        await ensureRenderedPdf({ force });
         buildPreviewPages();
         if (!state.previewPages.length && getCanonicalResult().html) {
           throw new Error("Preview pipeline returned zero pages despite generated content.");
         }
+        setPreviewState("ready");
         updateActionState("preview", "success", "Preview pages are ready.");
-        console.log("[action:preview] request success", { pageCount: state.previewPages.length });
       } catch (error) {
         console.error("[action:preview] error", error);
-        state.previewError = error.message || "Unable to fetch server PDF preview pages.";
-        renderPreviewCarousel();
-        console.log("[action:preview] request failed", { message: error.message });
-        updateActionState("preview", "error", error.message || "Unable to fetch server PDF preview pages.");
+        const fallbackMessage = "Preview unavailable right now.";
+        setPreviewState("failed", {
+          message: fallbackMessage,
+          details: error.details || error.message || "Unknown preview error.",
+          errorCode: error.errorCode || error.code || "PREVIEW_RENDER_FAILED"
+        });
+        updateActionState("preview", "error", error.userMessage || error.message || fallbackMessage);
       } finally {
-        setPreviewLoading(false);
         setActionButtonLoading(els.previewResultBtn, false);
         resetActionState("preview");
       }
@@ -1450,12 +1509,13 @@ body.export-mode #resultView #resultCard {
       }
     }
 
-    async function ensureRenderedPdf() {
+    async function ensureRenderedPdf({ force = false } = {}) {
       const canonical = getCanonicalResult();
-      const needsFreshRender = !canonical.pdfUrl || !normalizePreviewPages(canonical.previewPages || []).length;
+      const hasPreviewPages = normalizePreviewPages(canonical.previewPages || []).length > 0;
+      const needsFreshRender = force || !canonical.pdfUrl || !hasPreviewPages;
 
       if (!needsFreshRender && canonical.pdfUrl) {
-        console.log("[action:pdf] using existing pdf", { pdfUrl: canonical.pdfUrl, generationId: canonical.generationId });
+        console.log("[action:pdf] using cached pdf", { pdfUrl: canonical.pdfUrl, generationId: canonical.generationId });
         return canonical;
       }
 
@@ -1470,7 +1530,6 @@ body.export-mode #resultView #resultCard {
         customerId: state.subscription.customerId || "",
         generationId: canonical.generationId || undefined
       };
-      console.log("[action:pdf] request started", { endpoint: "/api/render-pdf", payload });
       let response;
       try {
         response = await fetch("/api/render-pdf", {
@@ -1479,15 +1538,18 @@ body.export-mode #resultView #resultCard {
           body: JSON.stringify(payload)
         });
       } catch (error) {
-        console.error("[action:pdf] request failed", { endpoint: "/api/render-pdf", error });
         throw new Error(`Network error calling /api/render-pdf: ${error.message || "Unknown error"}`);
       }
 
       const result = await safeJson(response);
-      console.log("[action:pdf] request success", result);
       if (!response.ok || !result.success) {
-        console.error("[action:pdf] failure response", { endpoint: "/api/render-pdf", status: response.status, result });
-        throw new Error(humanizeApiError(result.error, result.details));
+        const message = humanizeApiError(result);
+        const wrapped = new Error(message);
+        wrapped.details = result.details || "";
+        wrapped.code = result.errorCode || "PREVIEW_RENDER_FAILED";
+        wrapped.errorCode = result.errorCode || "PREVIEW_RENDER_FAILED";
+        wrapped.userMessage = message;
+        throw wrapped;
       }
 
       setCanonicalResult({ ...canonical, ...result, html: canonical.html });
@@ -1499,6 +1561,7 @@ body.export-mode #resultView #resultCard {
       setActionButtonLoading(els.printPdfBtn, true, "Exporting...");
       updateActionState("exportPdf", "loading", "Preparing PDF...");
       try {
+        if (state.renderingAvailable === false) throw new Error("Preview unavailable right now. Browser Rendering is not configured.");
         const pdf = await ensureRenderedPdf();
         const absoluteUrl = toAbsoluteUrl(pdf.pdfUrl);
         console.log("[action:exportPdf] request started", { endpoint: "/api/pdf", absoluteUrl });
@@ -1575,6 +1638,7 @@ body.export-mode #resultView #resultCard {
       setActionButtonLoading(els.shareResultBtn, true, "Sharing...");
       updateActionState("share", "loading", "Preparing PDF to share...");
       try {
+        if (state.renderingAvailable === false) throw new Error("Preview unavailable right now. Browser Rendering is not configured.");
         const pdf = await ensureRenderedPdf();
         const shareUrl = toAbsoluteUrl(pdf.pdfUrl);
         if (!shareUrl) throw new Error("PDF link is unavailable.");
@@ -1748,6 +1812,7 @@ body.export-mode #resultView #resultCard {
       setCanonicalResult(generation);
       if (getCanonicalResult().html) {
         setView("result");
+        maybeAutoBuildPreview("workspace-load");
       }
     }
 
@@ -1864,6 +1929,7 @@ body.export-mode #resultView #resultCard {
         setStatus("success", "Lead magnet generated successfully. Scroll down to review your output.");
         closePricingModal();
         setView("result");
+        maybeAutoBuildPreview("generation-complete");
       } catch (error) {
         setStatus("error", error.message || "Generation failed. Please try again.");
       } finally {
@@ -1882,8 +1948,11 @@ body.export-mode #resultView #resultCard {
       state.resultDocument = null;
       state.previewPages = [];
       state.previewPageIndex = 0;
-      state.previewLoading = false;
-      state.previewError = "";
+      state.previewStatus = "idle";
+      state.previewMessage = "";
+      state.previewDebugDetails = "";
+      state.renderingAvailable = null;
+      state.renderingErrorCode = "";
       setGeneratingState(false);
       els.leadForm.reset();
       renderResultPreview();

@@ -46,11 +46,15 @@ CREATE TABLE IF NOT EXISTS generations (
   generated_html TEXT NOT NULL,
   pdf_key TEXT,
   pdf_created_at TEXT,
+  preview_pages_json TEXT,
+  preview_page_count INTEGER DEFAULT 0,
+  preview_updated_at TEXT,
   created_at TEXT NOT NULL,
   FOREIGN KEY(stripe_customer_id) REFERENCES customers(stripe_customer_id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_generations_customer_created
   ON generations (stripe_customer_id, created_at DESC);
+
 
 
