@@ -64,3 +64,11 @@ npm run dev
 - The dashboard shows plan, subscription status, billing window, usage, remaining generations, and recent saved generations.
 - Last loaded workspace email is persisted in `localStorage` and restored automatically.
 - Saved generations can be loaded back into the result panel from the workspace list.
+
+## Format-aware outputs and export actions
+
+- Generation is now format-aware and produces meaningfully different HTML deliverables for Ebook, Guide, Checklist, Worksheet, Landing Page Copy, Follow-up Email Sequence, and Brand Kit Suggestions.
+- The result panel includes an action row for Preview, Download HTML, Print / Save as PDF, Share (native when available), and Copy HTML.
+- Downloaded files now use cleaner names based on brand, output type, and date (for example: `bibleautointeriors-ebook-2026-03-09.html`).
+- Native share gracefully falls back when unavailable in the current browser/device.
+
