@@ -786,6 +786,10 @@ body.export-mode #resultView #resultCard {
       <button id="copyHtmlBtn" type="button" class="result-action-btn rounded-xl px-3 py-2.5 text-xs font-semibold opacity-80">Copy HTML</button>
     </div>
     <p id="resultActionHelper" class="mt-3 text-xs text-slate-400"></p>
+    <div id="actionDiagnosticsPanel" class="mt-3 hidden rounded-xl border border-sky-300/30 bg-sky-400/10 p-3 text-xs text-sky-100">
+      <p class="font-semibold uppercase tracking-[0.14em] text-sky-200">Dev diagnostics</p>
+      <pre id="actionDiagnosticsOutput" class="mt-2 whitespace-pre-wrap break-words text-[11px] leading-5"></pre>
+    </div>
   </div>
 
 	  <div id="documentPreviewPanel" class="mb-5 rounded-2xl border border-white/10 bg-slate-900/30 p-3 sm:p-4 no-print no-export">
@@ -903,6 +907,15 @@ body.export-mode #resultView #resultCard {
         copyingHtml: 0,
         downloadingHtml: 0
       },
+      diagnostics: {
+        lastAction: "idle",
+        lastActionStatus: "idle",
+        lastErrorMessage: "",
+        lastServerStatusCode: "",
+        lastRequestUrl: "",
+        lastResponseSummary: "",
+        lastUpdatedAt: ""
+      },
       workspace: null,
       isGenerating: false,
       isCheckoutPending: false,
@@ -961,6 +974,8 @@ body.export-mode #resultView #resultCard {
       printPdfBtn: document.getElementById("printPdfBtn"),
       shareResultBtn: document.getElementById("shareResultBtn"),
       copyHtmlBtn: document.getElementById("copyHtmlBtn"),
+      actionDiagnosticsPanel: document.getElementById("actionDiagnosticsPanel"),
+      actionDiagnosticsOutput: document.getElementById("actionDiagnosticsOutput"),
       resultActionHelper: document.getElementById("resultActionHelper"),
       workspaceEmail: document.getElementById("workspaceEmail"),
       loadWorkspaceBtn: document.getElementById("loadWorkspaceBtn"),
@@ -1200,6 +1215,7 @@ body.export-mode #resultView #resultCard {
       const pdfReady = typeof source.pdfReady === "boolean" ? source.pdfReady : Boolean(pdfUrl);
       const status = source.status || base.status || (html ? "generated" : "idle");
       const error = source.error || base.error || "";
+      const lastUpdatedAt = source.lastUpdatedAt || base.lastUpdatedAt || new Date().toISOString();
 
       return {
         generationId,
@@ -1213,6 +1229,7 @@ body.export-mode #resultView #resultCard {
         pdfReady,
         status,
         error,
+        lastUpdatedAt,
         title: source.title || source.documentTitle || base.title || `${titleize(format)} for ${sourceUrl || "your brand"}`
       };
     }
@@ -1236,8 +1253,70 @@ body.export-mode #resultView #resultCard {
         });
       }
       renderPreviewDebug();
+      renderActionDiagnostics();
       renderPreviewCarousel();
       setResultActionsEnabled();
+    }
+
+    function updateDiagnostics(patch = {}) {
+      state.diagnostics = {
+        ...state.diagnostics,
+        ...patch,
+        lastUpdatedAt: new Date().toISOString()
+      };
+      renderActionDiagnostics();
+    }
+
+    function summarizePayload(payload = {}) {
+      return {
+        generationId: payload.generationId || null,
+        brandUrl: payload.brandUrl || "",
+        magnetType: payload.magnetType || "",
+        hasHtml: Boolean(payload.generatedHtml || payload.html),
+        htmlLength: String(payload.generatedHtml || payload.html || "").length,
+        force: Boolean(payload.force)
+      };
+    }
+
+    function logActionStep(action, step, data = {}) {
+      console.log(`[action:${action}] ${step}`, data);
+    }
+
+    async function parseServerResponse(response) {
+      const contentType = response.headers.get("content-type") || "";
+      if (contentType.includes("application/json")) {
+        return { body: await safeJson(response), kind: "json" };
+      }
+      if (contentType.includes("application/pdf")) {
+        return { body: await response.blob(), kind: "blob" };
+      }
+      const text = await response.text();
+      try {
+        return { body: JSON.parse(text), kind: "json" };
+      } catch {
+        return { body: text, kind: "text" };
+      }
+    }
+
+    function renderActionDiagnostics() {
+      if (!DEV_MODE || !els.actionDiagnosticsPanel || !els.actionDiagnosticsOutput) return;
+      const canonical = getCanonicalResult();
+      const diagnostics = state.diagnostics;
+      els.actionDiagnosticsPanel.classList.remove("hidden");
+      const lines = [
+        `lastAction: ${diagnostics.lastAction || "—"}`,
+        `lastActionStatus: ${diagnostics.lastActionStatus || "—"}`,
+        `previewPages.length: ${(canonical.previewPages || []).length}`,
+        `pageCount: ${canonical.pageCount || 0}`,
+        `pdfReady: ${canonical.pdfReady ? "yes" : "no"}`,
+        `pdfUrl present: ${canonical.pdfUrl ? "yes" : "no"}`,
+        `share supported: ${navigator.share ? "yes" : "no"}`,
+        `lastError: ${diagnostics.lastErrorMessage || "—"}`,
+        `lastServerStatus: ${diagnostics.lastServerStatusCode || "—"}`,
+        `lastRequestUrl: ${diagnostics.lastRequestUrl || "—"}`,
+        `lastResponse: ${diagnostics.lastResponseSummary || "—"}`
+      ];
+      els.actionDiagnosticsOutput.textContent = lines.join("\n");
     }
 
     function maybeAutoBuildPreview(source = "auto") {
@@ -1452,6 +1531,7 @@ body.export-mode #resultView #resultCard {
       }
       renderPreviewCarousel();
       renderPreviewDebug();
+      renderActionDiagnostics();
       setResultActionsEnabled();
     }
 
@@ -1632,30 +1712,92 @@ body.export-mode #resultView #resultCard {
 
     async function handlePreviewResult({ source = "button" } = {}) {
       const requestId = nextActionRequestId("previewBuilding");
-      console.log("[action:preview] trigger", { generationId: getCanonicalResult().generationId, source, requestId });
+      const canonical = getCanonicalResult();
+      const payload = {
+        generatedHtml: canonical.html,
+        generationId: canonical.generationId || undefined,
+        brandUrl: canonical.sourceUrl || state.form.brandUrl,
+        magnetType: canonical.format || state.form.magnetType
+      };
+
+      logActionStep("preview", "button click handler entered", { source, requestId, generationId: canonical.generationId });
+      updateDiagnostics({
+        lastAction: "preview",
+        lastActionStatus: "started",
+        lastErrorMessage: "",
+        lastServerStatusCode: "",
+        lastRequestUrl: "/api/preview",
+        lastResponseSummary: JSON.stringify(summarizePayload(payload))
+      });
+
       updateActionState("previewBuilding", true);
       setPreviewState("building", { message: "Refreshing preview..." });
+
       try {
-        const canonical = getCanonicalResult();
         if (!canonical.html) throw new Error("Generate content before previewing pages.");
-        const pages = buildPreviewPages();
+        logActionStep("preview", "payload built", { generationId: payload.generationId, payloadSummary: summarizePayload(payload) });
+
+        logActionStep("preview", "fetch started", { requestUrl: "/api/preview" });
+        const response = await fetch("/api/preview", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        logActionStep("preview", "fetch response status", { status: response.status });
+        const { body: parsed, kind } = await parseServerResponse(response);
+        logActionStep("preview", "response body parsed", { kind, parsedJson: kind === "json" ? parsed : `[${kind}]` });
+        updateDiagnostics({ lastServerStatusCode: String(response.status) });
+
         if (!isLatestActionRequest("previewBuilding", requestId)) return;
-        if (!pages.length) {
-          setPreviewState("failed", {
-            message: "No visible preview page content was produced.",
-            details: "Pagination finished but all pages were empty after trimming."
-          });
-          return;
+        if (!response.ok || kind !== "json" || !parsed.success) {
+          throw new Error(parsed?.error || `Preview request failed with status ${response.status}.`);
         }
+
+        const previewPages = normalizePreviewPages(parsed.previewPages || []);
+        const pageCount = Number(parsed.pageCount) || previewPages.length;
+        const blankPages = previewPages.filter((page) => !String(page.html || "").replace(/<[^>]+>/g, "").trim());
+
+        logActionStep("preview", "derived values", {
+          generationId: canonical.generationId,
+          previewPagesLength: previewPages.length,
+          pageCount,
+          blankPageCount: blankPages.length,
+          pageCharCounts: previewPages.map((p) => String(p.html || "").replace(/<[^>]+>/g, " ").trim().length)
+        });
+
+        if (!previewPages.length || blankPages.length) {
+          const raw = JSON.stringify(parsed).slice(0, 800);
+          console.error("[action:preview] malformed/empty preview response", { raw, blankPages: blankPages.length });
+          throw new Error(!previewPages.length
+            ? "Preview returned no visible pages."
+            : "Preview contained blank page content.");
+        }
+
+        setCanonicalResult({
+          ...canonical,
+          previewPages,
+          pageCount,
+          status: "preview-ready",
+          error: "",
+          lastUpdatedAt: new Date().toISOString()
+        });
+        logActionStep("preview", "state updated", { previewPagesLength: previewPages.length, pageCount });
+
         setPreviewState("ready", { message: "Preview pages are ready." });
+        updateDiagnostics({ lastActionStatus: "success", lastResponseSummary: JSON.stringify({ pageCount, previewPagesLength: previewPages.length }) });
       } catch (error) {
         if (!isLatestActionRequest("previewBuilding", requestId)) return;
-        console.error("[dev] preview error", error);
+        logActionStep("preview", "catch reached", { error: error?.message || String(error) });
+        console.error("[action:preview] error", error);
+        setCanonicalResult({ ...getCanonicalResult(), status: "preview-error", error: error.message || "Preview failed.", lastUpdatedAt: new Date().toISOString() });
         setPreviewState("failed", {
-          message: "Preview unavailable right now.",
+          message: error.message || "Preview unavailable right now.",
           details: error.details || error.stack || error.message || "Unknown preview error."
         });
+        updateDiagnostics({ lastActionStatus: "failed", lastErrorMessage: error.message || "Preview failed." });
       } finally {
+        logActionStep("preview", "finally reached", { requestId });
         if (isLatestActionRequest("previewBuilding", requestId)) {
           updateActionState("previewBuilding", false);
         }
@@ -1688,7 +1830,7 @@ body.export-mode #resultView #resultCard {
     async function ensureRenderedPdf({ force = false } = {}) {
       const canonical = getCanonicalResult();
       if (canonical.pdfReady && canonical.pdfUrl && !force) {
-        console.log("[action:pdf] using cached pdf", { pdfUrl: canonical.pdfUrl, generationId: canonical.generationId });
+        logActionStep("pdf", "using cached pdf", { pdfUrl: canonical.pdfUrl, generationId: canonical.generationId });
         return canonical;
       }
       if (!canonical.html) throw new Error("Generate content before exporting a PDF.");
@@ -1701,49 +1843,102 @@ body.export-mode #resultView #resultCard {
         generationId: canonical.generationId || undefined,
         force: Boolean(force)
       };
+
+      logActionStep("pdf", "payload built", { generationId: payload.generationId, payloadSummary: summarizePayload(payload) });
+      updateDiagnostics({ lastRequestUrl: "/api/render-pdf", lastResponseSummary: JSON.stringify(summarizePayload(payload)) });
+
+      logActionStep("pdf", "fetch started", { requestUrl: "/api/render-pdf" });
       const response = await fetch("/api/render-pdf", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
+      logActionStep("pdf", "fetch response status", { status: response.status });
 
-      const result = await safeJson(response);
-      if (DEV_MODE) console.log("[dev] export pdf payload", result);
-      if (!response.ok || !result.success) {
-        const message = humanizeApiError(result);
+      const { body: result, kind } = await parseServerResponse(response);
+      logActionStep("pdf", "response body parsed", { kind, parsedJson: kind === "json" ? result : `[${kind}]` });
+      updateDiagnostics({ lastServerStatusCode: String(response.status) });
+
+      if (!response.ok || kind !== "json" || !result.success) {
+        const message = humanizeApiError(kind === "json" ? result : { error: `Unexpected ${kind} response.` });
         const wrapped = new Error(message);
-        wrapped.details = result.details || "";
+        wrapped.details = result?.details || "";
         throw wrapped;
       }
 
-      setCanonicalResult({ ...canonical, ...result, html: canonical.html, pdfReady: true, status: "pdf-ready", error: "" });
+      const next = {
+        ...canonical,
+        ...result,
+        html: canonical.html,
+        pdfReady: Boolean(result.pdfUrl || result.pdfKey),
+        status: "pdf-ready",
+        error: "",
+        lastUpdatedAt: new Date().toISOString()
+      };
+      setCanonicalResult(next);
+      logActionStep("pdf", "state updated", { pdfUrl: next.pdfUrl, pdfKey: next.pdfKey, pdfReady: next.pdfReady });
       return getCanonicalResult();
     }
 
     async function handlePrintPdf() {
       const requestId = nextActionRequestId("exportingPdf");
+      const canonical = getCanonicalResult();
+      logActionStep("exportPdf", "button click handler entered", { generationId: canonical.generationId, requestId });
+      updateDiagnostics({ lastAction: "exportPdf", lastActionStatus: "started", lastErrorMessage: "" });
       updateActionState("exportingPdf", true);
       try {
         const pdf = await ensureRenderedPdf();
         if (!isLatestActionRequest("exportingPdf", requestId)) return;
         const absoluteUrl = toAbsoluteUrl(pdf.pdfUrl);
-        const pdfResponse = await fetch(absoluteUrl, { method: "GET" });
-        if (!pdfResponse.ok) throw new Error(`PDF endpoint returned ${pdfResponse.status}.`);
+        if (!absoluteUrl) throw new Error("PDF URL was not returned by the server.");
 
-        const blob = await pdfResponse.blob();
-        const objectUrl = URL.createObjectURL(blob);
+        logActionStep("exportPdf", "fetch started", { requestUrl: absoluteUrl });
+        const pdfResponse = await fetch(absoluteUrl, { method: "GET" });
+        logActionStep("exportPdf", "fetch response status", { status: pdfResponse.status });
+        updateDiagnostics({ lastRequestUrl: absoluteUrl, lastServerStatusCode: String(pdfResponse.status) });
+
+        if (!pdfResponse.ok) throw new Error(`PDF endpoint returned ${pdfResponse.status}.`);
+        const contentType = pdfResponse.headers.get("content-type") || "";
+
+        let objectUrl = "";
+        if (contentType.includes("application/pdf")) {
+          const blob = await pdfResponse.blob();
+          objectUrl = URL.createObjectURL(blob);
+          logActionStep("exportPdf", "response body parsed", { kind: "blob", size: blob.size });
+        } else {
+          const maybeJson = await safeJson(pdfResponse);
+          logActionStep("exportPdf", "response body parsed", { kind: "json", parsedJson: maybeJson });
+          if (maybeJson.pdfUrl) {
+            objectUrl = toAbsoluteUrl(maybeJson.pdfUrl);
+          }
+        }
+
+        if (!objectUrl) throw new Error("Export did not produce a usable PDF URL/blob.");
         const anchor = document.createElement("a");
         anchor.href = objectUrl;
         anchor.download = `${getExportFilename()}.pdf`;
         document.body.appendChild(anchor);
         anchor.click();
         document.body.removeChild(anchor);
-        setTimeout(() => URL.revokeObjectURL(objectUrl), 1500);
+        const opened = Boolean(window.open(absoluteUrl, "_blank", "noopener,noreferrer"));
+
+        logActionStep("exportPdf", "navigation/download triggered", {
+          downloadClicked: true,
+          windowOpenCalled: true,
+          windowOpenSuccess: opened,
+          exportPath: objectUrl.startsWith("blob:") ? "blob-download" : "url-download"
+        });
+
+        if (objectUrl.startsWith("blob:")) setTimeout(() => URL.revokeObjectURL(objectUrl), 1500);
         setStatus("success", "PDF exported successfully.");
+        updateDiagnostics({ lastActionStatus: "success", lastResponseSummary: JSON.stringify({ pdfUrl: absoluteUrl, opened }) });
       } catch (error) {
+        logActionStep("exportPdf", "catch reached", { error: error?.message || String(error) });
         console.error("[action:exportPdf] error", error);
         setStatus("error", `Export failed: ${error.message || "Unknown error"}`);
+        updateDiagnostics({ lastActionStatus: "failed", lastErrorMessage: error.message || "Export failed." });
       } finally {
+        logActionStep("exportPdf", "finally reached", { requestId });
         if (isLatestActionRequest("exportingPdf", requestId)) updateActionState("exportingPdf", false);
       }
     }
@@ -1770,6 +1965,9 @@ body.export-mode #resultView #resultCard {
 
     async function handleShareResult() {
       const requestId = nextActionRequestId("sharingPdf");
+      const canonical = getCanonicalResult();
+      logActionStep("share", "button click handler entered", { generationId: canonical.generationId, requestId });
+      updateDiagnostics({ lastAction: "share", lastActionStatus: "started", lastErrorMessage: "" });
       updateActionState("sharingPdf", true);
       try {
         const pdf = await ensureRenderedPdf();
@@ -1777,41 +1975,66 @@ body.export-mode #resultView #resultCard {
         const shareUrl = toAbsoluteUrl(pdf.pdfUrl);
         if (!shareUrl) throw new Error("PDF link is unavailable.");
 
+        logActionStep("share", "navigator share availability", {
+          navigatorShareExists: Boolean(navigator.share),
+          navigatorCanShareExists: Boolean(navigator.canShare)
+        });
+
+        logActionStep("share", "fetch started", { requestUrl: shareUrl });
         const pdfResponse = await fetch(shareUrl, { method: "GET" });
+        logActionStep("share", "fetch response status", { status: pdfResponse.status });
+        updateDiagnostics({ lastRequestUrl: shareUrl, lastServerStatusCode: String(pdfResponse.status) });
+
         if (!pdfResponse.ok) throw new Error(`PDF endpoint returned ${pdfResponse.status}.`);
         const pdfBlob = await pdfResponse.blob();
         const file = new File([pdfBlob], `${getExportFilename()}.pdf`, { type: "application/pdf" });
+        logActionStep("share", "response body parsed", { kind: "blob", size: pdfBlob.size });
 
         if (navigator.share) {
           try {
             const baseData = { title: getDocumentTitle(), text: `Polished ${titleize(getCanonicalResult().format)} deliverable for ${getBrandLabel()}.` };
             if (navigator.canShare && navigator.canShare({ files: [file] })) {
-              if (DEV_MODE) console.log("[dev] share path: native file");
+              logActionStep("share", "share triggered", { mode: "native-file" });
               await navigator.share({ ...baseData, files: [file] });
               setStatus("success", "Shared PDF file successfully.");
+              updateDiagnostics({ lastActionStatus: "success", lastResponseSummary: "native-file" });
               return;
             }
-            if (DEV_MODE) console.log("[dev] share path: native url");
+            logActionStep("share", "share triggered", { mode: "native-url" });
             await navigator.share({ ...baseData, url: shareUrl });
             setStatus("success", "Shared PDF link successfully.");
+            updateDiagnostics({ lastActionStatus: "success", lastResponseSummary: "native-url" });
             return;
           } catch (error) {
+            logActionStep("share", "share threw", { name: error?.name, message: error?.message });
             if (error?.name === "AbortError") throw error;
             console.warn("[action:share] navigator.share failed", error);
           }
         }
 
-        if (DEV_MODE) console.log("[dev] share path: fallback open/download");
-        window.open(`${shareUrl}&download=1`, "_blank", "noopener,noreferrer");
+        const fallbackUrl = `${shareUrl}${shareUrl.includes("?") ? "&" : "?"}download=1`;
+        const openResult = window.open(fallbackUrl, "_blank", "noopener,noreferrer");
+        const link = document.createElement("a");
+        link.href = fallbackUrl;
+        link.download = `${getExportFilename()}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
         await copyTextWithFallback(shareUrl);
+        logActionStep("share", "fallback path used", { mode: "open-download-copy", windowOpenCalled: true, windowOpenSuccess: Boolean(openResult), downloadClicked: true });
         setStatus("ready", "Native share unavailable. Opened/downloaded PDF and copied link.");
+        updateDiagnostics({ lastActionStatus: "fallback", lastResponseSummary: JSON.stringify({ fallbackUrl, windowOpened: Boolean(openResult) }) });
       } catch (error) {
+        logActionStep("share", "catch reached", { error: error?.message || String(error) });
         if (error?.name === "AbortError") {
           setStatus("idle", "Share canceled.");
+          updateDiagnostics({ lastActionStatus: "canceled", lastErrorMessage: "Share canceled by user." });
         } else {
           setStatus("error", error.message || "Share failed in this environment.");
+          updateDiagnostics({ lastActionStatus: "failed", lastErrorMessage: error.message || "Share failed." });
         }
       } finally {
+        logActionStep("share", "finally reached", { requestId });
         if (isLatestActionRequest("sharingPdf", requestId)) updateActionState("sharingPdf", false);
       }
     }
@@ -2078,6 +2301,15 @@ body.export-mode #resultView #resultCard {
       state.previewDebugDetails = "";
       state.renderingAvailable = null;
       state.renderingErrorCode = "";
+      state.diagnostics = {
+        lastAction: "idle",
+        lastActionStatus: "idle",
+        lastErrorMessage: "",
+        lastServerStatusCode: "",
+        lastRequestUrl: "",
+        lastResponseSummary: "",
+        lastUpdatedAt: ""
+      };
       setGeneratingState(false);
       els.leadForm.reset();
       renderResultPreview();
@@ -2198,6 +2430,7 @@ body.export-mode #resultView #resultCard {
     restoreFormState();
     renderResultPreview();
     setResultActionsEnabled();
+    renderActionDiagnostics();
     buildPreviewPages();
     updatePlanSelectorVisibility();
     updateGenerateButtonLabel();
