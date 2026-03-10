@@ -8,3 +8,29 @@
     "binding": "BROWSER"
   }
 }
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "lead-magnet-pro",
+  "compatibility_date": "2026-03-09",
+  "compatibility_flags": ["nodejs_compat"],
+  "pages_build_output_dir": ".",
+
+  "browser": {
+    "binding": "BROWSER"
+  },
+
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "lead-magnet-pro-db",
+      "database_id": "4f967da8-9674-4191-b97a-0271be9a539c"
+    }
+  ],
+
+  "r2_buckets": [
+    {
+      "binding": "PDF_BUCKET",
+      "bucket_name": "lead-magnet-pro-assets"
+    }
+  ]
+}
