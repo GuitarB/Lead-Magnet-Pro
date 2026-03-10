@@ -27,7 +27,13 @@ export async function onRequestPost(context) {
     const generationId = body?.generationId ? Number(body.generationId) : null;
 
     const documentTitle = `${titleize(magnetType)} for ${brandUrl || "your brand"}`;
-    const standaloneHtml = toStandaloneHtmlDocument({ documentTitle, generatedHtml, magnetType, brandUrl });
+    const paginatedDocument = buildPaginatedDocumentModel(generatedHtml);
+    const standaloneHtml = toStandaloneHtmlDocument({
+      documentTitle,
+      paginatedHtml: paginatedDocument.paginatedHtml,
+      magnetType,
+      brandUrl
+    });
 
     const pdfResponse = await fetch(
       `https://api.cloudflare.com/client/v4/accounts/${env.CLOUDFLARE_ACCOUNT_ID}/browser-rendering/pdf`,
@@ -65,14 +71,12 @@ export async function onRequestPost(context) {
       await persistPdfMetadata(env.DB, generationId, pdfKey);
     }
 
-    const previewPages = buildPreviewPages(generatedHtml);
-
     return jsonResponse({
       success: true,
       pdfUrl: `/api/pdf?key=${encodeURIComponent(pdfKey)}`,
       pdfKey,
-      pageCount: previewPages.length,
-      previewPages,
+      pageCount: paginatedDocument.previewPages.length,
+      previewPages: paginatedDocument.previewPages,
       html: generatedHtml,
       generationId
     });
@@ -116,25 +120,64 @@ function buildPdfKey({ customerId, brandUrl, magnetType }) {
   return `pdf/${idPart}/${brandPart}-${typePart}-${timestamp}.pdf`;
 }
 
-function buildPreviewPages(html) {
-  const chunks = html
-    .split(/(?=<h[12][^>]*>)/i)
-    .map((chunk) => chunk.trim())
-    .filter(Boolean);
+function buildPaginatedDocumentModel(html) {
+  const blocks = extractContentBlocks(html);
+  const maxPageWeight = 2200;
+  const pages = [];
 
-  const pages = (chunks.length ? chunks : [html]).map((chunk, index) => {
-    const plainText = chunk.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  let currentPageBlocks = [];
+  let currentWeight = 0;
+
+  blocks.forEach((block) => {
+    const blockWeight = estimateBlockWeight(block);
+    const shouldStartNewPage = currentPageBlocks.length > 0 && currentWeight + blockWeight > maxPageWeight;
+    if (shouldStartNewPage) {
+      pages.push(currentPageBlocks.join(""));
+      currentPageBlocks = [];
+      currentWeight = 0;
+    }
+
+    currentPageBlocks.push(block);
+    currentWeight += blockWeight;
+  });
+
+  if (currentPageBlocks.length) {
+    pages.push(currentPageBlocks.join(""));
+  }
+
+  const safePages = pages.length ? pages : [html];
+  const previewPages = safePages.map((pageHtml, index) => {
+    const plainText = pageHtml.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
     return {
       page: index + 1,
-      html: chunk,
+      html: pageHtml,
       summary: plainText.slice(0, 220)
     };
   });
 
-  return pages.slice(0, 8);
+  const paginatedHtml = previewPages
+    .map(
+      (page) => `<section class="pdf-page"><div class="pdf-page-inner">${page.html}</div></section>`
+    )
+    .join("\n");
+
+  return { previewPages, paginatedHtml };
 }
 
-function toStandaloneHtmlDocument({ documentTitle, generatedHtml, magnetType, brandUrl }) {
+function extractContentBlocks(html) {
+  const matches = html.match(/<(section|div|h1|h2|h3|h4|p|ul|ol|blockquote|table)[^>]*>[\s\S]*?<\/\1>/gi);
+  if (matches?.length) return matches.map((part) => part.trim()).filter(Boolean);
+  return [String(html || "").trim()];
+}
+
+function estimateBlockWeight(blockHtml) {
+  const textLength = blockHtml.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().length;
+  const headingBonus = /<h[1-3][^>]*>/i.test(blockHtml) ? 280 : 0;
+  const listBonus = /<(ul|ol)[^>]*>/i.test(blockHtml) ? 220 : 0;
+  return textLength + headingBonus + listBonus;
+}
+
+function toStandaloneHtmlDocument({ documentTitle, paginatedHtml, magnetType, brandUrl }) {
   const dateStamp = new Date().toISOString().slice(0, 10);
   return `<!DOCTYPE html>
 <html lang="en">
@@ -144,12 +187,20 @@ function toStandaloneHtmlDocument({ documentTitle, generatedHtml, magnetType, br
     <title>${escapeHtml(documentTitle)}</title>
     <meta name="description" content="Generated ${escapeHtml(titleize(magnetType))} for ${escapeHtml(brandUrl || "your brand")}" />
     <style>
-      body { font-family: Inter, system-ui, -apple-system, sans-serif; background: #f8fafc; color: #0f172a; margin: 0; padding: 2rem; }
-      .document-shell { max-width: 860px; margin: 0 auto; background: #fff; border: 1px solid #e2e8f0; border-radius: 18px; box-shadow: 0 12px 34px rgba(15,23,42,.09); padding: 2.4rem; }
+      body { font-family: Inter, system-ui, -apple-system, sans-serif; background: #f8fafc; color: #0f172a; margin: 0; padding: 1rem; }
+      .document-shell { max-width: 860px; margin: 0 auto; }
+      .pdf-page { page-break-after: always; break-after: page; margin: 0 auto 1rem; background: #fff; border: 1px solid #e2e8f0; border-radius: 18px; box-shadow: 0 12px 34px rgba(15,23,42,.09); min-height: 10.2in; overflow: hidden; }
+      .pdf-page:last-child { page-break-after: auto; break-after: auto; }
+      .pdf-page-inner { padding: 2.2rem; }
       h1,h2,h3 { color: #0f172a; }
       p,li { color: #334155; line-height: 1.75; }
       .export-meta { margin-bottom: 1.4rem; padding-bottom: 1rem; border-bottom: 1px solid #e2e8f0; }
       @page { margin: 0.55in; }
+      @media print {
+        body { background: #fff; padding: 0; }
+        .pdf-page { margin: 0; border: none; border-radius: 0; box-shadow: none; min-height: auto; }
+        .pdf-page-inner { padding: 0; }
+      }
     </style>
   </head>
   <body>
@@ -159,7 +210,7 @@ function toStandaloneHtmlDocument({ documentTitle, generatedHtml, magnetType, br
         <h1 style="margin:6px 0 0;font-size:20px;line-height:1.25;">${escapeHtml(documentTitle)}</h1>
         <p style="margin:6px 0 0;font-size:12px;color:#334155;">Generated ${dateStamp} · Format: ${escapeHtml(titleize(magnetType))}</p>
       </div>
-      ${generatedHtml}
+      ${paginatedHtml}
     </article>
   </body>
 </html>`;
