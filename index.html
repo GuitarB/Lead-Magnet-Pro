@@ -201,26 +201,28 @@
   overflow-y: hidden;
   scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch;
-  padding-bottom: 0.3rem;
   width: 100%;
+  padding: 0;
 }
 
 .preview-page {
   min-width: 100%;
   max-width: 100%;
   scroll-snap-align: center;
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  background: linear-gradient(180deg, rgba(248, 250, 252, 0.98), rgba(241, 245, 249, 0.98));
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  background: #ffffff;
   border-radius: 1rem;
-  padding: 1rem;
   color: #0f172a;
+  box-shadow: 0 14px 24px rgba(2, 6, 23, 0.18);
+  overflow: hidden;
 }
 
 .preview-page__content {
   font-size: 0.95rem;
   line-height: 1.7;
-  max-height: 320px;
-  overflow: auto;
+  padding: 1.1rem;
+  min-height: min(72vh, 560px);
+  overflow: hidden;
 }
 
 .preview-page__content p,
@@ -1241,30 +1243,6 @@ body.export-mode #resultView #resultCard {
         .filter((page) => page && page.html);
     }
 
-    function getPreviewPagesFromHtml() {
-      const canonical = getCanonicalResult();
-      if (!canonical.html) return [];
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(`<div>${canonical.html}</div>`, "text/html");
-      const nodes = Array.from(doc.body.firstElementChild?.children || []);
-      const pages = [];
-      let current = [];
-      nodes.forEach((node) => {
-        if (["H1", "H2"].includes(node.tagName) && current.length) {
-          pages.push(current.join(""));
-          current = [];
-        }
-        current.push(node.outerHTML);
-      });
-      if (current.length) pages.push(current.join(""));
-      const safePages = pages.length ? pages : [canonical.html];
-      return safePages.map((page, index) => ({
-        page: index + 1,
-        html: page,
-        summary: page.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 220)
-      }));
-    }
-
     function updatePreviewControls() {
       const pageCount = state.previewPages.length;
       els.previewActivePage.textContent = pageCount ? `Page ${state.previewPageIndex + 1} / ${pageCount}` : "Page 0 / 0";
@@ -1277,7 +1255,7 @@ body.export-mode #resultView #resultCard {
       const pageCount = pages.length;
       els.previewPageCount.textContent = `${pageCount} page${pageCount === 1 ? "" : "s"}`;
       if (!pageCount) {
-        els.previewSwipeViewport.innerHTML = '<div class="preview-page"><div class="preview-page__content"><p>No preview pages yet. Generate or export a PDF first.</p></div></div>';
+        els.previewSwipeViewport.innerHTML = '<div class="preview-page"><div class="preview-page__content"><p>No paginated PDF preview yet. Tap “Preview Pages” or “Export PDF” to build it from the server PDF pipeline.</p></div></div>';
         updatePreviewControls();
         return;
       }
@@ -1294,8 +1272,8 @@ body.export-mode #resultView #resultCard {
     function buildPreviewPages() {
       const canonical = getCanonicalResult();
       const serverPages = normalizePreviewPages(canonical.previewPages || []);
-      state.previewPages = serverPages.length ? serverPages : getPreviewPagesFromHtml();
-      if (canonical.pageCount && !serverPages.length && state.previewPages.length !== canonical.pageCount) {
+      state.previewPages = serverPages;
+      if (canonical.pageCount && state.previewPages.length && state.previewPages.length !== canonical.pageCount) {
         console.log("[preview] page count mismatch", { canonical: canonical.pageCount, built: state.previewPages.length });
       }
       renderPreviewCarousel();
@@ -1408,10 +1386,13 @@ body.export-mode #resultView #resultCard {
 
     async function ensureRenderedPdf() {
       const canonical = getCanonicalResult();
-      if (canonical.pdfUrl) {
+      const needsFreshRender = !canonical.pdfUrl || !normalizePreviewPages(canonical.previewPages || []).length;
+
+      if (!needsFreshRender && canonical.pdfUrl) {
         console.log("[action:pdf] using existing pdf", { pdfUrl: canonical.pdfUrl, generationId: canonical.generationId });
         return canonical;
       }
+
       if (!canonical.html) {
         throw new Error("Generate content before exporting a PDF.");
       }
@@ -1434,6 +1415,7 @@ body.export-mode #resultView #resultCard {
       const result = await safeJson(response);
       console.log("[action:pdf] response", result);
       if (!response.ok || !result.success) {
+        console.error("[action:pdf] failure response", { status: response.status, result });
         throw new Error(result.error || result.details || "Unable to render PDF.");
       }
 
