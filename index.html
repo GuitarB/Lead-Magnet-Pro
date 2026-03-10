@@ -157,7 +157,7 @@
 </head>
 <body class="text-slate-100 antialiased">
   <!-- Top Nav -->
-  <header class="sticky top-0 z-40 border-b border-white/10 bg-slate-950/70 backdrop-blur">
+  <header id="appHeader" class="sticky top-0 z-40 border-b border-white/10 bg-slate-950/70 backdrop-blur transition-all duration-200">
     <div class="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 sm:py-4">
       <a href="#" class="flex items-center gap-3">
         <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-600 font-bold shadow-glow">
@@ -169,13 +169,13 @@
         </div>
       </a>
 
-      <nav class="hidden items-center gap-8 md:flex">
+      <nav class="hidden items-center gap-8 md:flex" id="topNavLinks">
         <a href="#how-it-works" class="text-sm text-slate-300 transition hover:text-white">How it Works</a>
-        <a href="#dashboard" class="text-sm text-slate-300 transition hover:text-white">Dashboard</a>
+        <a href="#" id="navDashboardLink" class="text-sm text-slate-300 transition hover:text-white">Generator</a>
       </nav>
 
       <button
-        id="navGetStartedBtn"
+        id="navCtaBtn"
         class="rounded-xl bg-white px-3.5 py-2 text-sm font-semibold text-slate-950 transition hover:bg-slate-200 sm:px-4"
       >
         Get Started
@@ -355,72 +355,8 @@
             </p>
           </div>
 
-          <button
-            id="backToLandingBtn"
-            class="rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-slate-200 transition hover:bg-white/10"
-          >
-            ← Back to Landing
-          </button>
+          <button id="backToLandingBtn" class="rounded-2xl border border-white/10 bg-transparent px-4 py-2 text-xs font-semibold text-slate-400 transition hover:border-white/20 hover:text-slate-200">Back to Landing</button>
         </div>
-
-        <section class="glass mb-8 rounded-3xl p-5 sm:p-6">
-          <div class="mb-5 flex flex-col gap-2">
-            <p class="text-sm font-semibold uppercase tracking-[0.18em] text-brand-300">Workspace Access</p>
-            <h3 class="text-xl font-semibold text-white">Access your workspace</h3>
-            <p class="text-sm text-slate-300">Enter the email used at checkout to load plan usage and recent saved lead magnets.</p>
-          </div>
-          <div class="flex flex-col gap-3 sm:flex-row">
-            <input
-              id="workspaceEmail"
-              type="email"
-              placeholder="you@company.com"
-              class="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-slate-100 placeholder:text-slate-500 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
-            />
-            <button
-              id="loadWorkspaceBtn"
-              type="button"
-              class="rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-200"
-            >
-              Load My Workspace
-            </button>
-          </div>
-          <p id="workspaceMessage" class="mt-3 text-sm text-slate-300"></p>
-
-          <div id="workspacePanel" class="mt-5 hidden rounded-2xl border border-white/10 bg-slate-950/50 p-4 sm:p-5">
-            <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              <div class="rounded-2xl border border-white/10 bg-slate-950/70 p-3">
-                <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Current Plan</p>
-                <p id="workspacePlan" class="mt-2 text-sm font-semibold text-white">—</p>
-              </div>
-              <div class="rounded-2xl border border-white/10 bg-slate-950/70 p-3">
-                <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Subscription</p>
-                <p id="workspaceStatus" class="mt-2 text-sm font-semibold text-white">—</p>
-              </div>
-              <div class="rounded-2xl border border-white/10 bg-slate-950/70 p-3">
-                <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Used This Month</p>
-                <p id="workspaceUsage" class="mt-2 text-sm font-semibold text-white">—</p>
-              </div>
-              <div class="rounded-2xl border border-white/10 bg-slate-950/70 p-3">
-                <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Remaining</p>
-                <p id="workspaceRemaining" class="mt-2 text-sm font-semibold text-white">—</p>
-              </div>
-            </div>
-            <p id="workspaceBillingPeriod" class="mt-4 text-xs text-slate-400">Billing period: —</p>
-            <div class="mt-4">
-              <div class="mb-2 flex items-center justify-between gap-3">
-                <p class="text-sm font-semibold text-white">Recent Saved Generations</p>
-                <button
-                  id="manageBillingBtn"
-                  type="button"
-                  class="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-slate-200 transition hover:bg-white/10"
-                >
-                  Manage Billing
-                </button>
-              </div>
-              <div id="workspaceGenerations" class="space-y-2 text-sm text-slate-200"></div>
-            </div>
-          </div>
-        </section>
 
         <div class="grid gap-7 lg:grid-cols-[1.15fr_0.85fr] lg:gap-8">
           <!-- Main Form -->
@@ -619,7 +555,7 @@
           </div>
         </div>
 
-        <div class="glass rounded-3xl p-5 sm:p-7 md:p-8">
+        <div class="mx-auto w-full max-w-[1200px] rounded-3xl border border-white/10 bg-slate-900/25 p-4 sm:p-6 md:p-8">
           <div class="mb-6 flex flex-col gap-4 border-b border-white/10 pb-6 md:flex-row md:items-center md:justify-between">
             <div>
               <p class="text-sm font-semibold text-white">Generated Lead Magnet</p>
@@ -630,30 +566,30 @@
             </div>
           </div>
 
-         <div id="resultCard" class="rounded-3xl border border-white/10 bg-gradient-to-b from-slate-950/45 to-slate-950/20 p-3 sm:p-4 md:p-5">
-  <div class="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-    <div class="rounded-2xl border border-white/10 bg-slate-900/40 p-3">
+         <div id="resultCard" class="rounded-3xl border border-white/10 bg-slate-950/20 p-3 sm:p-4 md:p-6">
+  <div class="mb-5 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+    <div class="rounded-2xl border border-white/10 bg-slate-900/25 px-3 py-2.5">
       <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Source URL</p>
       <p id="resultBrandUrl" class="mt-2 break-all text-sm text-slate-200">—</p>
     </div>
-    <div class="rounded-2xl border border-white/10 bg-slate-900/40 p-3">
+    <div class="rounded-2xl border border-white/10 bg-slate-900/25 px-3 py-2.5">
       <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Format</p>
       <p id="resultMagnetType" class="mt-2 text-sm text-slate-200">—</p>
     </div>
-    <div class="rounded-2xl border border-white/10 bg-slate-900/40 p-3">
+    <div class="rounded-2xl border border-white/10 bg-slate-900/25 px-3 py-2.5">
       <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Audience</p>
       <p id="resultAudience" class="mt-2 text-sm text-slate-200">—</p>
     </div>
-    <div class="rounded-2xl border border-white/10 bg-slate-900/40 p-3">
+    <div class="rounded-2xl border border-white/10 bg-slate-900/25 px-3 py-2.5">
       <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Plan</p>
       <p id="resultPlan" class="mt-2 text-sm text-slate-200">Free</p>
     </div>
   </div>
 
-  <div class="p-1 sm:p-2 md:p-3">
+  <div class="p-0.5 sm:p-1 md:p-2">
     <div
       id="generatedDocument"
-      class="mx-auto w-full max-w-5xl rounded-2xl bg-white px-4 py-7 text-slate-900 shadow-2xl sm:px-6 sm:py-9 md:px-10 md:py-12"
+      class="mx-auto w-full max-w-6xl rounded-2xl bg-white px-4 py-6 text-slate-900 shadow-2xl sm:px-8 sm:py-10 md:px-12 md:py-12"
     >
       <div class="prose-shell">
         <p class="text-sm uppercase tracking-[0.25em] text-brand-700">Sample Lead Magnet</p>
@@ -674,6 +610,54 @@
     </section>
   </main>
 
+  <div id="pricingModal" class="hidden fixed inset-0 z-50">
+    <div id="pricingModalOverlay" class="absolute inset-0 bg-slate-950/70"></div>
+    <div class="relative mx-auto mt-16 w-[92%] max-w-4xl rounded-3xl border border-white/10 bg-slate-900 p-5 shadow-2xl sm:mt-20 sm:p-7">
+      <div class="mb-5 flex items-center justify-between">
+        <div>
+          <p class="text-sm font-semibold uppercase tracking-[0.2em] text-brand-300">Pricing</p>
+          <h3 class="mt-1 text-2xl font-semibold text-white">Choose a plan to continue</h3>
+        </div>
+        <button id="closePricingModalBtn" class="rounded-lg border border-white/10 px-3 py-2 text-xs text-slate-300">Close</button>
+      </div>
+      <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="rounded-2xl border border-white/10 bg-slate-950/60 p-4"><p class="text-base font-semibold text-white">Free</p><p class="mt-1 text-xs text-slate-400">1 preview</p><button type="button" data-plan="free" class="pricing-plan-btn mt-3 w-full rounded-lg border border-white/10 px-3 py-2 text-xs font-semibold text-slate-200">Choose Free</button></div>
+        <div class="rounded-2xl border border-white/10 bg-slate-950/60 p-4"><p class="text-base font-semibold text-white">Starter</p><p class="mt-1 text-xs text-slate-400">$9/mo · 20 generations</p><button type="button" data-plan="starter" class="pricing-plan-btn mt-3 w-full rounded-lg bg-brand-600 px-3 py-2 text-xs font-semibold text-white">Choose Starter</button></div>
+        <div class="rounded-2xl border border-white/10 bg-slate-950/60 p-4"><p class="text-base font-semibold text-white">Builder</p><p class="mt-1 text-xs text-slate-400">$19/mo · 75 generations</p><button type="button" data-plan="builder" class="pricing-plan-btn mt-3 w-full rounded-lg bg-brand-600 px-3 py-2 text-xs font-semibold text-white">Choose Builder</button></div>
+        <div class="rounded-2xl border border-white/10 bg-slate-950/60 p-4"><p class="text-base font-semibold text-white">Founder</p><p class="mt-1 text-xs text-slate-400">$39/mo · 200 generations</p><button type="button" data-plan="founder" class="pricing-plan-btn mt-3 w-full rounded-lg bg-brand-600 px-3 py-2 text-xs font-semibold text-white">Choose Founder</button></div>
+      </div>
+      <button id="goToGeneratorBtn" class="mt-5 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white">Open Generator</button>
+    </div>
+  </div>
+
+  <div id="accountPanel" class="hidden fixed inset-0 z-50">
+    <div id="accountPanelOverlay" class="absolute inset-0 bg-slate-950/70"></div>
+    <aside class="absolute right-0 top-0 h-full w-full max-w-lg overflow-y-auto border-l border-white/10 bg-slate-950 p-5 sm:p-6">
+      <div class="mb-4 flex items-center justify-between">
+        <h3 class="text-xl font-semibold text-white">Account & Workspace</h3>
+        <button id="closeAccountPanelBtn" class="rounded-lg border border-white/10 px-3 py-2 text-xs text-slate-300">Close</button>
+      </div>
+      <p class="text-sm text-slate-300">Load the email used at checkout to view plan status and saved generations.</p>
+      <div class="mt-4 flex flex-col gap-3 sm:flex-row">
+        <input id="workspaceEmail" type="email" placeholder="you@company.com" class="w-full rounded-2xl border border-white/10 bg-slate-900 px-4 py-3 text-slate-100 placeholder:text-slate-500 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30" />
+        <button id="loadWorkspaceBtn" type="button" class="rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-slate-900">Load</button>
+      </div>
+      <p id="workspaceMessage" class="mt-3 text-sm text-slate-300"></p>
+      <div id="workspacePanel" class="mt-5 hidden rounded-2xl border border-white/10 bg-slate-900/50 p-4 sm:p-5">
+        <div class="grid gap-3 sm:grid-cols-2">
+          <div class="rounded-2xl border border-white/10 bg-slate-950/70 p-3"><p class="text-xs uppercase tracking-[0.2em] text-slate-400">Current Plan</p><p id="workspacePlan" class="mt-2 text-sm font-semibold text-white">—</p></div>
+          <div class="rounded-2xl border border-white/10 bg-slate-950/70 p-3"><p class="text-xs uppercase tracking-[0.2em] text-slate-400">Subscription</p><p id="workspaceStatus" class="mt-2 text-sm font-semibold text-white">—</p></div>
+          <div class="rounded-2xl border border-white/10 bg-slate-950/70 p-3"><p class="text-xs uppercase tracking-[0.2em] text-slate-400">Used</p><p id="workspaceUsage" class="mt-2 text-sm font-semibold text-white">—</p></div>
+          <div class="rounded-2xl border border-white/10 bg-slate-950/70 p-3"><p class="text-xs uppercase tracking-[0.2em] text-slate-400">Remaining</p><p id="workspaceRemaining" class="mt-2 text-sm font-semibold text-white">—</p></div>
+        </div>
+        <p id="workspaceBillingPeriod" class="mt-4 text-xs text-slate-400">Billing period: —</p>
+        <button id="manageBillingBtn" type="button" class="mt-4 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-slate-200">Manage Billing</button>
+        <p class="mt-4 text-sm font-semibold text-white">Recent Saved Generations</p>
+        <div id="workspaceGenerations" class="mt-2 space-y-2 text-sm text-slate-200"></div>
+      </div>
+    </aside>
+  </div>
+
   <script>
     const FORM_STATE_KEY = "leadMagnetProFormState";
     const SUBSCRIPTION_KEY = "leadMagnetProSubscription";
@@ -688,14 +672,19 @@
       generatedHtml: "",
       workspace: null,
       isGenerating: false,
-      showPlanSelector: true
+      showPlanSelector: true,
+      pricingOpen: false,
+      accountOpen: false
     };
 
     const els = {
       landingView: document.getElementById("landingView"),
       dashboardView: document.getElementById("dashboardView"),
       resultView: document.getElementById("resultView"),
-      navGetStartedBtn: document.getElementById("navGetStartedBtn"),
+      appHeader: document.getElementById("appHeader"),
+      topNavLinks: document.getElementById("topNavLinks"),
+      navDashboardLink: document.getElementById("navDashboardLink"),
+      navCtaBtn: document.getElementById("navCtaBtn"),
       heroStartBtn: document.getElementById("heroStartBtn"),
       backToLandingBtn: document.getElementById("backToLandingBtn"),
       editInputBtn: document.getElementById("editInputBtn"),
@@ -732,7 +721,15 @@
       workspaceRemaining: document.getElementById("workspaceRemaining"),
       workspaceBillingPeriod: document.getElementById("workspaceBillingPeriod"),
       workspaceGenerations: document.getElementById("workspaceGenerations"),
-      manageBillingBtn: document.getElementById("manageBillingBtn")
+      manageBillingBtn: document.getElementById("manageBillingBtn"),
+      pricingModal: document.getElementById("pricingModal"),
+      pricingModalOverlay: document.getElementById("pricingModalOverlay"),
+      closePricingModalBtn: document.getElementById("closePricingModalBtn"),
+      goToGeneratorBtn: document.getElementById("goToGeneratorBtn"),
+      pricingPlanBtns: document.querySelectorAll(".pricing-plan-btn"),
+      accountPanel: document.getElementById("accountPanel"),
+      accountPanelOverlay: document.getElementById("accountPanelOverlay"),
+      closeAccountPanelBtn: document.getElementById("closeAccountPanelBtn")
     };
 
     function readStoredSubscription() {
@@ -866,6 +863,46 @@
       target.classList.remove("hidden-view");
       target.classList.add("fade-in");
       setTimeout(() => target.classList.remove("fade-in"), 350);
+      updateHeaderState();
+    }
+
+    function openPricingModal() {
+      state.pricingOpen = true;
+      els.pricingModal.classList.remove("hidden");
+    }
+
+    function closePricingModal() {
+      state.pricingOpen = false;
+      els.pricingModal.classList.add("hidden");
+    }
+
+    function openAccountPanel() {
+      state.accountOpen = true;
+      els.accountPanel.classList.remove("hidden");
+    }
+
+    function closeAccountPanel() {
+      state.accountOpen = false;
+      els.accountPanel.classList.add("hidden");
+    }
+
+    function updateHeaderState() {
+      const inAppFlow = state.currentView !== "landing";
+      els.appHeader.classList.toggle("bg-slate-950/95", inAppFlow);
+      els.appHeader.classList.toggle("border-white/20", inAppFlow);
+      els.topNavLinks.classList.toggle("md:flex", state.currentView === "landing");
+      updateNavCta();
+    }
+
+    function updateNavCta() {
+      const hasWorkspace = Boolean(state.workspace);
+      if (hasWorkspace) {
+        els.navCtaBtn.innerHTML = '<span class="inline-flex items-center gap-2"><svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8a7 7 0 1 1 14 0H3Z"/></svg>Account</span>';
+        els.navCtaBtn.className = "rounded-xl border border-white/15 bg-white/5 px-3.5 py-2 text-sm font-semibold text-slate-100 transition hover:bg-white/10 sm:px-4";
+      } else {
+        els.navCtaBtn.textContent = "Pricing";
+        els.navCtaBtn.className = "rounded-xl bg-white px-3.5 py-2 text-sm font-semibold text-slate-950 transition hover:bg-slate-200 sm:px-4";
+      }
     }
 
     function syncStateFromForm() {
@@ -967,6 +1004,7 @@
         state.showPlanSelector = true;
         updatePlanSelectorVisibility();
         updateGenerateButtonLabel();
+        updateNavCta();
         els.workspacePanel.classList.add("hidden");
         els.workspaceMessage.textContent = "No workspace found for that email yet.";
         return;
@@ -993,6 +1031,7 @@
       renderWorkspace(result);
       updatePlanSelectorVisibility();
       updateGenerateButtonLabel();
+      updateNavCta();
     }
 
     function loadSavedGeneration(generation) {
@@ -1092,6 +1131,7 @@
         renderResultPreview();
         els.generatedDocument.innerHTML = `<div class="generated-html">${state.generatedHtml}</div>`;
         setStatus("success", "Lead magnet generated successfully. Scroll down to review your output.");
+        closePricingModal();
         setView("result");
       } catch (error) {
         setStatus("error", error.message || "Generation failed. Please try again.");
@@ -1113,14 +1153,51 @@
       updatePlanSelectorVisibility();
       updateGenerateButtonLabel();
       setStatus("idle", "Complete the fields and submit to prepare the generation payload.");
-      setView("landing");
+      closePricingModal();
+      closeAccountPanel();
+      setView("dashboard");
+      updateNavCta();
     }
 
-    els.navGetStartedBtn.addEventListener("click", () => setView("dashboard"));
+    els.navCtaBtn.addEventListener("click", () => {
+      if (state.workspace) {
+        openAccountPanel();
+      } else {
+        openPricingModal();
+      }
+    });
     els.heroStartBtn.addEventListener("click", () => setView("dashboard"));
+    els.navDashboardLink.addEventListener("click", (event) => {
+      event.preventDefault();
+      setView("dashboard");
+    });
     els.backToLandingBtn.addEventListener("click", () => setView("landing"));
-    els.editInputBtn.addEventListener("click", () => setView("dashboard"));
+    els.editInputBtn.addEventListener("click", () => {
+      setStatus("ready", "Inputs preserved. Update your details and generate again.");
+      setView("dashboard");
+    });
     els.startOverBtn.addEventListener("click", resetApp);
+
+    els.closePricingModalBtn.addEventListener("click", closePricingModal);
+    els.pricingModalOverlay.addEventListener("click", closePricingModal);
+    els.goToGeneratorBtn.addEventListener("click", () => {
+      closePricingModal();
+      setView("dashboard");
+    });
+    els.closeAccountPanelBtn.addEventListener("click", closeAccountPanel);
+    els.accountPanelOverlay.addEventListener("click", closeAccountPanel);
+    els.pricingPlanBtns.forEach((button) => {
+      button.addEventListener("click", () => {
+        const plan = button.dataset.plan;
+        if (plan) {
+          state.form.plan = plan;
+          els.planOptions.forEach((opt) => { opt.checked = opt.value === plan; });
+          syncStateFromForm();
+          closePricingModal();
+          setView("dashboard");
+        }
+      });
+    });
 
     [els.brandUrl, els.supportFile, els.magnetType, els.audience, els.goal, ...els.planOptions].forEach((input) => {
       ["input", "change"].forEach((eventName) => {
@@ -1162,6 +1239,7 @@
     renderResultPreview();
     updatePlanSelectorVisibility();
     updateGenerateButtonLabel();
+    updateNavCta();
     setStatus("idle", "Complete the fields and submit to prepare the generation payload.");
     processPaymentQueryParams();
 
