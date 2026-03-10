@@ -564,7 +564,7 @@ body.export-mode #resultView #resultCard {
                     </button>
                   </div>
                 </div>
-                <p class="mb-3 block text-sm font-medium text-slate-200">Selected Plan</p>
+                <p id="selectedPlanHeading" class="mb-3 block text-sm font-medium text-slate-200">Selected Plan</p>
                 <div id="planSelectorPanel" class="rounded-2xl border border-white/10 bg-slate-950/70 p-4">
                   <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
@@ -840,6 +840,8 @@ body.export-mode #resultView #resultCard {
       resultDocument: null,
       previewPages: [],
       previewPageIndex: 0,
+      previewLoading: false,
+      previewError: "",
       actionState: {
         preview: "idle",
         downloadHtml: "idle",
@@ -878,6 +880,7 @@ body.export-mode #resultView #resultCard {
       currentPlanSummaryMeta: document.getElementById("currentPlanSummaryMeta"),
       togglePlansBtn: document.getElementById("togglePlansBtn"),
       planSelectorPanel: document.getElementById("planSelectorPanel"),
+      selectedPlanHeading: document.getElementById("selectedPlanHeading"),
       selectedPlanLabel: document.getElementById("selectedPlanLabel"),
       selectedPlanMeta: document.getElementById("selectedPlanMeta"),
       choosePlanBtn: document.getElementById("choosePlanBtn"),
@@ -993,12 +996,16 @@ body.export-mode #resultView #resultCard {
 
     function updatePlanSelectorVisibility() {
       const activePaidWorkspace = isWorkspaceActivePaid();
+      const workspacePlanMatchesSelection = activePaidWorkspace && state.workspace.plan === state.form.plan;
+      const shouldShowPlanSelector = !activePaidWorkspace || !workspacePlanMatchesSelection;
       els.currentPlanSummary.classList.toggle("hidden", !activePaidWorkspace);
       els.togglePlansBtn.textContent = "Change Plan";
+      els.planSelectorPanel.classList.toggle("hidden", !shouldShowPlanSelector);
+      els.selectedPlanHeading.classList.toggle("hidden", !shouldShowPlanSelector);
 
       if (activePaidWorkspace) {
         els.currentPlanSummaryText.textContent = `${titleize(state.workspace.plan)} • Active`;
-        els.currentPlanSummaryMeta.textContent = `${state.workspace.generationsRemaining} generations remaining this billing period.`;
+        els.currentPlanSummaryMeta.textContent = `${titleize(state.workspace.subscriptionStatus || "active")} • ${state.workspace.generationsRemaining} generations remaining this billing period.`;
       }
 
       const selectedPlanDetails = PLAN_DETAILS[state.form.plan] || PLAN_DETAILS.free;
@@ -1254,8 +1261,21 @@ body.export-mode #resultView #resultCard {
       const pages = state.previewPages;
       const pageCount = pages.length;
       els.previewPageCount.textContent = `${pageCount} page${pageCount === 1 ? "" : "s"}`;
+      if (state.previewLoading) {
+        els.previewSwipeViewport.innerHTML = '<div class="preview-page"><div class="preview-page__content"><p>Building paginated preview from the server PDF pipeline…</p></div></div>';
+        updatePreviewControls();
+        return;
+      }
+
+      if (state.previewError) {
+        els.previewSwipeViewport.innerHTML = `<div class="preview-page"><div class="preview-page__content"><p>Preview build failed: ${state.previewError}</p></div></div>`;
+        updatePreviewControls();
+        return;
+      }
+
       if (!pageCount) {
-        els.previewSwipeViewport.innerHTML = '<div class="preview-page"><div class="preview-page__content"><p>No paginated PDF preview yet. Tap “Preview Pages” or “Export PDF” to build it from the server PDF pipeline.</p></div></div>';
+        const canonical = getCanonicalResult();
+        els.previewSwipeViewport.innerHTML = `<div class="preview-page"><div class="preview-page__content"><p>${canonical.html ? "Preview pages are not ready yet. Tap “Preview Pages” to build them from the server PDF pipeline." : "No generated content yet. Generate a lead magnet to see preview pages."}</p></div></div>`;
         updatePreviewControls();
         return;
       }
@@ -1273,9 +1293,15 @@ body.export-mode #resultView #resultCard {
       const canonical = getCanonicalResult();
       const serverPages = normalizePreviewPages(canonical.previewPages || []);
       state.previewPages = serverPages;
+      state.previewError = "";
       if (canonical.pageCount && state.previewPages.length && state.previewPages.length !== canonical.pageCount) {
         console.log("[preview] page count mismatch", { canonical: canonical.pageCount, built: state.previewPages.length });
       }
+      renderPreviewCarousel();
+    }
+
+    function setPreviewLoading(isLoading) {
+      state.previewLoading = isLoading;
       renderPreviewCarousel();
     }
 
@@ -1346,13 +1372,23 @@ body.export-mode #resultView #resultCard {
       setActionButtonLoading(els.previewResultBtn, true, "Loading...");
       updateActionState("preview", "loading", "Preparing PDF preview pages...");
       try {
+        setPreviewLoading(true);
+        state.previewError = "";
         await ensureRenderedPdf();
         buildPreviewPages();
+        if (!state.previewPages.length && getCanonicalResult().html) {
+          throw new Error("Preview pipeline returned zero pages despite generated content.");
+        }
         updateActionState("preview", "success", "Preview pages are ready.");
+        console.log("[action:preview] request success", { pageCount: state.previewPages.length });
       } catch (error) {
         console.error("[action:preview] error", error);
+        state.previewError = error.message || "Unable to fetch server PDF preview pages.";
+        renderPreviewCarousel();
+        console.log("[action:preview] request failed", { message: error.message });
         updateActionState("preview", "error", error.message || "Unable to fetch server PDF preview pages.");
       } finally {
+        setPreviewLoading(false);
         setActionButtonLoading(els.previewResultBtn, false);
         resetActionState("preview");
       }
@@ -1404,18 +1440,23 @@ body.export-mode #resultView #resultCard {
         customerId: state.subscription.customerId || "",
         generationId: canonical.generationId || undefined
       };
-      console.log("[action:pdf] request payload", payload);
-      console.log("[action:pdf] endpoint", "/api/render-pdf");
-      const response = await fetch("/api/render-pdf", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
+      console.log("[action:pdf] request started", { endpoint: "/api/render-pdf", payload });
+      let response;
+      try {
+        response = await fetch("/api/render-pdf", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+      } catch (error) {
+        console.error("[action:pdf] request failed", { endpoint: "/api/render-pdf", error });
+        throw new Error(`Network error calling /api/render-pdf: ${error.message || "Unknown error"}`);
+      }
 
       const result = await safeJson(response);
-      console.log("[action:pdf] response", result);
+      console.log("[action:pdf] request success", result);
       if (!response.ok || !result.success) {
-        console.error("[action:pdf] failure response", { status: response.status, result });
+        console.error("[action:pdf] failure response", { endpoint: "/api/render-pdf", status: response.status, result });
         throw new Error(result.error || result.details || "Unable to render PDF.");
       }
 
@@ -1430,10 +1471,26 @@ body.export-mode #resultView #resultCard {
       try {
         const pdf = await ensureRenderedPdf();
         const absoluteUrl = toAbsoluteUrl(pdf.pdfUrl);
+        console.log("[action:exportPdf] request started", { endpoint: "/api/pdf", absoluteUrl });
+        try {
+          const verifyResponse = await fetch(absoluteUrl, { method: "GET" });
+          if (!verifyResponse.ok) {
+            throw new Error(`PDF endpoint returned ${verifyResponse.status}.`);
+          }
+        } catch (error) {
+          console.error("[action:exportPdf] request failed", { endpoint: "/api/pdf", error });
+          throw new Error(`Network error calling /api/pdf: ${error.message || "Unknown error"}`);
+        }
         const separator = absoluteUrl.includes("?") ? "&" : "?";
         const downloadUrl = `${absoluteUrl}${separator}download=1`;
-        console.log("[action:exportPdf] opening", downloadUrl);
-        window.open(downloadUrl, "_blank", "noopener,noreferrer");
+        const anchor = document.createElement("a");
+        anchor.href = downloadUrl;
+        anchor.target = "_blank";
+        anchor.rel = "noopener noreferrer";
+        document.body.appendChild(anchor);
+        anchor.click();
+        document.body.removeChild(anchor);
+        console.log("[action:exportPdf] request success", { downloadUrl });
         updateActionState("exportPdf", "success", "PDF exported successfully.");
       } catch (error) {
         console.error("[action:exportPdf] error", error);
@@ -1446,6 +1503,8 @@ body.export-mode #resultView #resultCard {
 
     async function handleCopyHtml() {
       console.log("[action:copyHtml] click", { generationId: getCanonicalResult().generationId });
+      let copied = false;
+      console.log("[action:copyHtml] request started", { target: "clipboard" });
       setActionButtonLoading(els.copyHtmlBtn, true, "Copying...");
       updateActionState("copyHtml", "loading", "Copying HTML...");
       try {
@@ -1456,12 +1515,23 @@ body.export-mode #resultView #resultCard {
           copyJob,
           new Promise((_, reject) => setTimeout(() => reject(new Error("Clipboard request timed out.")), 4000))
         ]);
+        copied = true;
+        console.log("[action:copyHtml] request success");
         updateActionState("copyHtml", "success", "HTML copied.");
       } catch (error) {
         console.error("[action:copyHtml] error", error);
+        console.log("[action:copyHtml] request failed", { message: error.message });
         updateActionState("copyHtml", "error", error.message || "Could not copy HTML.");
       } finally {
         setActionButtonLoading(els.copyHtmlBtn, false);
+        if (copied) {
+          els.copyHtmlBtn.textContent = "Copied!";
+          setTimeout(() => {
+            if (els.copyHtmlBtn.dataset.defaultLabel) {
+              els.copyHtmlBtn.textContent = els.copyHtmlBtn.dataset.defaultLabel;
+            }
+          }, 1500);
+        }
         resetActionState("copyHtml");
       }
     }
@@ -1474,18 +1544,43 @@ body.export-mode #resultView #resultCard {
         const pdf = await ensureRenderedPdf();
         const shareUrl = toAbsoluteUrl(pdf.pdfUrl);
         if (!shareUrl) throw new Error("PDF link is unavailable.");
-        console.log("[action:share] url", shareUrl);
+        console.log("[action:share] request started", { endpoint: "/api/pdf", shareUrl });
+        let pdfBlob;
+        try {
+          const pdfResponse = await fetch(shareUrl, { method: "GET" });
+          if (!pdfResponse.ok) {
+            throw new Error(`PDF endpoint returned ${pdfResponse.status}.`);
+          }
+          pdfBlob = await pdfResponse.blob();
+        } catch (error) {
+          console.error("[action:share] request failed", { endpoint: "/api/pdf", error });
+          throw new Error(`Network error calling /api/pdf: ${error.message || "Unknown error"}`);
+        }
+        console.log("[action:share] request success", { bytes: pdfBlob.size });
 
         if (navigator.share) {
-          await navigator.share({
+          const filename = `${getExportFilename()}.pdf`;
+          const file = new File([pdfBlob], filename, { type: "application/pdf" });
+          const canSharePdfFile = navigator.canShare && navigator.canShare({ files: [file] });
+          const shareData = {
             title: getDocumentTitle(),
             text: `Polished ${titleize(getCanonicalResult().format)} deliverable for ${getBrandLabel()}.`,
+            files: canSharePdfFile ? [file] : undefined,
             url: shareUrl
-          });
-          updateActionState("share", "success", "Shared successfully.");
-          return;
+          };
+          try {
+            await navigator.share(shareData);
+            updateActionState("share", "success", "Shared successfully.");
+            return;
+          } catch (error) {
+            if (error?.name === "AbortError") {
+              throw error;
+            }
+            console.warn("[action:share] fallback used", { strategy: "copy-and-open-url", reason: "navigator.share failed", error });
+          }
         }
 
+        console.log("[action:share] fallback used", { strategy: "copy-and-open-url" });
         await copyTextWithFallback(shareUrl);
         window.open(shareUrl, "_blank", "noopener,noreferrer");
         updateActionState("share", "success", "Share URL copied and opened.");
@@ -1604,7 +1699,6 @@ body.export-mode #resultView #resultCard {
       if (PAID_PLANS.has(result.plan)) {
         state.form.plan = result.plan;
       }
-
       renderWorkspace(result);
       updatePlanSelectorVisibility();
       updateGenerateButtonLabel();
@@ -1758,6 +1852,8 @@ body.export-mode #resultView #resultCard {
       state.resultDocument = null;
       state.previewPages = [];
       state.previewPageIndex = 0;
+      state.previewLoading = false;
+      state.previewError = "";
       setGeneratingState(false);
       els.leadForm.reset();
       renderResultPreview();
