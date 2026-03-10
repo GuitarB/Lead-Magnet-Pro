@@ -206,7 +206,13 @@ Return only polished HTML for the lead magnet.
       success: true,
       html: generatedHtml,
       savedGeneration: savedGeneration
-        ? { createdAt: savedGeneration.createdAt, plan: savedGeneration.plan, magnetType: savedGeneration.magnetType }
+        ? {
+            createdAt: savedGeneration.createdAt,
+            plan: savedGeneration.plan,
+            magnetType: savedGeneration.magnetType,
+            generationId: savedGeneration.generationId,
+            pdfKey: savedGeneration.pdfKey || null
+          }
         : null
     });
   } catch (error) {
@@ -303,7 +309,7 @@ async function recordUsageAndGeneration(db, generation) {
     .bind(generation.customerId, generation.plan)
     .first();
 
-  await db
+  const generationInsert = await db
     .prepare(
       `INSERT INTO generations (
         stripe_customer_id,
@@ -331,9 +337,11 @@ async function recordUsageAndGeneration(db, generation) {
     .run();
 
   return {
+    generationId: generationInsert?.meta?.last_row_id || null,
     createdAt: nowIso,
     plan: generation.plan,
-    magnetType: generation.magnetType
+    magnetType: generation.magnetType,
+    pdfKey: null
   };
 }
 

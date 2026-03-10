@@ -44,9 +44,12 @@ CREATE TABLE IF NOT EXISTS generations (
   goal TEXT,
   magnet_type TEXT,
   generated_html TEXT NOT NULL,
+  pdf_key TEXT,
+  pdf_created_at TEXT,
   created_at TEXT NOT NULL,
   FOREIGN KEY(stripe_customer_id) REFERENCES customers(stripe_customer_id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_generations_customer_created
   ON generations (stripe_customer_id, created_at DESC);
+

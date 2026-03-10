@@ -163,17 +163,27 @@
   cursor: not-allowed;
 }
 
+.preview-carousel {
+  overflow: hidden;
+}
+
 .doc-page-card {
+  width: 100%;
+  max-width: 100%;
   border: 1px solid rgba(148, 163, 184, 0.2);
-  background: linear-gradient(180deg, rgba(248, 250, 252, 0.95), rgba(241, 245, 249, 0.95));
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.98), rgba(241, 245, 249, 0.98));
   color: #0f172a;
   box-shadow: 0 14px 24px rgba(2, 6, 23, 0.22);
+  min-height: min(74vh, 560px);
+  overflow: hidden;
 }
 
 .doc-page-card .page-content {
-  max-height: 180px;
+  max-height: calc(min(74vh, 560px) - 52px);
   overflow: hidden;
   position: relative;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .doc-page-card .page-content::after {
@@ -186,92 +196,15 @@
   background: linear-gradient(to bottom, rgba(248, 250, 252, 0), rgba(248, 250, 252, 0.98));
 }
 
-.print-only {
-  display: none;
+
+
+.result-action-btn--muted {
+  opacity: 0.74;
 }
 
-body.export-mode > :not(main),
-body.export-mode #dashboardView,
-body.export-mode #landingView,
-body.export-mode #resultView .no-export,
-body.export-mode #resultView #resultMeta,
-body.export-mode #resultView #documentPreviewPanel {
-  display: none !important;
-}
-
-body.export-mode {
-  background: #fff !important;
-}
-
-body.export-mode #resultView,
-body.export-mode #resultView > div,
-body.export-mode #resultView #resultCard {
-  max-width: none !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  border: none !important;
-  background: transparent !important;
-  box-shadow: none !important;
-}
-
-body.export-mode #generatedDocument {
-  max-width: 8.3in !important;
-  margin: 0 auto !important;
-  border: none !important;
-  box-shadow: none !important;
-  border-radius: 0 !important;
-  padding: 0.5in !important;
-}
-
-@media print {
-  @page {
-    margin: 0.55in;
-  }
-
-  body {
-    background: #fff !important;
-  }
-
-  body > :not(main),
-  #dashboardView,
-  #landingView,
-  #resultView .no-print,
-  #resultMeta,
-  #documentPreviewPanel,
-  #resultView #editInputBtn,
-  #resultView #startOverBtn {
-    display: none !important;
-  }
-
-  #resultView,
-  #resultView > div,
-  #resultCard {
-    max-width: none !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    border: none !important;
-    background: transparent !important;
-    box-shadow: none !important;
-  }
-
-  #generatedDocument {
-    max-width: none !important;
-    margin: 0 !important;
-    border: none !important;
-    border-radius: 0 !important;
-    box-shadow: none !important;
-    padding: 0 !important;
-  }
-
-  .generated-html {
-    color: #0f172a !important;
-  }
-
-  .print-only {
-    display: block !important;
-    margin-bottom: 1.1rem;
-    border-bottom: 1px solid #cbd5e1;
-    padding-bottom: 0.8rem;
+@media (max-width: 640px) {
+  .result-actions-grid {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -729,12 +662,12 @@ body.export-mode #generatedDocument {
 
   <div class="mb-4 rounded-2xl border border-white/10 bg-slate-900/40 p-3 sm:p-4 no-print no-export">
     <p class="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Result actions</p>
-    <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+    <div class="result-actions-grid grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
       <button id="previewResultBtn" type="button" class="result-action-btn result-action-btn--primary rounded-xl px-3 py-2.5 text-xs font-semibold">Preview Pages</button>
-      <button id="downloadHtmlBtn" type="button" class="result-action-btn rounded-xl px-3 py-2.5 text-xs font-semibold">Download HTML</button>
       <button id="printPdfBtn" type="button" class="result-action-btn rounded-xl px-3 py-2.5 text-xs font-semibold">Export PDF</button>
-      <button id="shareResultBtn" type="button" class="result-action-btn rounded-xl px-3 py-2.5 text-xs font-semibold">Share</button>
-      <button id="copyHtmlBtn" type="button" class="result-action-btn rounded-xl px-3 py-2.5 text-xs font-semibold">Copy HTML</button>
+      <button id="shareResultBtn" type="button" class="result-action-btn rounded-xl px-3 py-2.5 text-xs font-semibold">Share PDF</button>
+      <button id="downloadHtmlBtn" type="button" class="result-action-btn rounded-xl px-3 py-2.5 text-xs font-semibold">Download HTML</button>
+      <button id="copyHtmlBtn" type="button" class="result-action-btn result-action-btn--muted rounded-xl px-3 py-2.5 text-xs font-semibold">Copy HTML</button>
     </div>
   </div>
 
@@ -743,7 +676,14 @@ body.export-mode #generatedDocument {
       <p class="text-sm font-semibold text-white">Document Preview</p>
       <span id="previewPageCount" class="text-xs uppercase tracking-[0.15em] text-slate-400">0 pages</span>
     </div>
-    <div id="documentPagePreview" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3"></div>
+    <div class="preview-carousel rounded-2xl border border-white/10 bg-slate-950/60 p-2 sm:p-3">
+      <div id="documentPagePreview"></div>
+    </div>
+    <div class="mt-3 flex items-center justify-between gap-2">
+      <button id="previewPrevBtn" type="button" class="result-action-btn rounded-lg px-3 py-2 text-xs font-semibold">Prev</button>
+      <span id="previewPageIndicator" class="text-xs uppercase tracking-[0.15em] text-slate-400">Page 0 / 0</span>
+      <button id="previewNextBtn" type="button" class="result-action-btn rounded-lg px-3 py-2 text-xs font-semibold">Next</button>
+    </div>
   </div>
 
   <div class="p-0.5 sm:p-1 md:p-2">
@@ -831,6 +771,10 @@ body.export-mode #generatedDocument {
       subscription: readStoredSubscription(),
       form: { brandUrl: "", fileName: "", magnetType: "guide", audience: "", goal: "", plan: "free" },
       generatedHtml: "",
+      pdf: null,
+      previewPages: [],
+      currentPreviewPage: 0,
+      lastSavedGenerationAt: "",
       workspace: null,
       isGenerating: false,
       showPlanSelector: true,
@@ -875,7 +819,10 @@ body.export-mode #generatedDocument {
       generatedDocument: document.getElementById("generatedDocument"),
       exportMeta: document.getElementById("exportMeta"),
       previewPageCount: document.getElementById("previewPageCount"),
+      previewPageIndicator: document.getElementById("previewPageIndicator"),
       documentPagePreview: document.getElementById("documentPagePreview"),
+      previewPrevBtn: document.getElementById("previewPrevBtn"),
+      previewNextBtn: document.getElementById("previewNextBtn"),
       previewResultBtn: document.getElementById("previewResultBtn"),
       downloadHtmlBtn: document.getElementById("downloadHtmlBtn"),
       printPdfBtn: document.getElementById("printPdfBtn"),
@@ -1140,58 +1087,46 @@ body.export-mode #generatedDocument {
     }
 
     function toStandaloneHtmlDocument() {
-      return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>${getDocumentTitle()}</title><meta name="description" content="Generated ${titleize(state.form.magnetType)} for ${getBrandLabel()}" /><style>body{font-family:Inter,system-ui,-apple-system,sans-serif;background:#f8fafc;color:#0f172a;margin:0;padding:2rem}.document-shell{max-width:860px;margin:0 auto;background:#fff;border:1px solid #e2e8f0;border-radius:18px;box-shadow:0 12px 34px rgba(15,23,42,.09);padding:2.4rem}h1,h2,h3{color:#0f172a}p,li{color:#334155;line-height:1.75}.export-meta{margin-bottom:1.4rem;padding-bottom:1rem;border-bottom:1px solid #e2e8f0}.export-meta p{margin:.35rem 0 0;font-size:13px;color:#475569}@media print{@page{margin:.55in}body{background:#fff;padding:0}.document-shell{max-width:none;border:none;box-shadow:none;border-radius:0;padding:0}}</style></head><body><article class="document-shell"><div class="export-meta">${getExportMetaBlock()}</div>${state.generatedHtml}</article></body></html>`;
+      return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>${getDocumentTitle()}</title></head><body>${state.generatedHtml}</body></html>`;
     }
 
     function buildPreviewPages() {
-      if (!state.generatedHtml) {
+      const sections = String(state.generatedHtml || "").split(/(?=<h1|<h2)/i).map((part) => part.trim()).filter(Boolean);
+      const pages = (sections.length ? sections : [state.generatedHtml]).filter(Boolean).map((html, index) => ({ page: index + 1, html }));
+      state.previewPages = pages.length ? pages : [];
+      if (state.currentPreviewPage >= state.previewPages.length) {
+        state.currentPreviewPage = Math.max(state.previewPages.length - 1, 0);
+      }
+      renderPreviewPage();
+    }
+
+    function renderPreviewPage() {
+      const total = state.previewPages.length;
+      els.previewPageCount.textContent = `${total} page${total === 1 ? "" : "s"}`;
+      if (!total) {
         els.documentPagePreview.innerHTML = "";
-        els.previewPageCount.textContent = "0 pages";
+        els.previewPageIndicator.textContent = "Page 0 / 0";
+        els.previewPrevBtn.disabled = true;
+        els.previewNextBtn.disabled = true;
         return;
       }
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(`<div>${state.generatedHtml}</div>`, "text/html");
-      const nodes = Array.from(doc.body.firstElementChild?.children || []);
-      const pages = [];
-      let current = [];
-      nodes.forEach((node) => {
-        if (["H1", "H2"].includes(node.tagName) && current.length) {
-          pages.push(current.join(""));
-          current = [];
-        }
-        current.push(node.outerHTML);
-      });
-      if (current.length) pages.push(current.join(""));
-      const safePages = pages.length ? pages : [state.generatedHtml];
-      const limited = safePages.slice(0, 6);
-      els.documentPagePreview.innerHTML = limited.map((page, index) => `<button type="button" class="doc-page-card w-full rounded-2xl p-3 text-left transition hover:-translate-y-0.5" data-page-target="${index + 1}"><p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Page ${index + 1}</p><div class="page-content mt-2 text-sm">${page}</div></button>`).join("");
-      els.previewPageCount.textContent = `${safePages.length} page${safePages.length === 1 ? "" : "s"}`;
-    }
 
-    function enterExportMode() {
-      document.body.classList.add("export-mode");
-      els.exportMeta.innerHTML = getExportMetaBlock();
-    }
-
-    function exitExportMode() {
-      document.body.classList.remove("export-mode");
-      els.exportMeta.innerHTML = "";
-    }
-
-    function setResultActionsEnabled() {
-      const enabled = Boolean(state.generatedHtml);
-      [els.previewResultBtn, els.downloadHtmlBtn, els.printPdfBtn, els.shareResultBtn, els.copyHtmlBtn].forEach((button) => {
-        button.disabled = !enabled;
-      });
+      const current = state.previewPages[state.currentPreviewPage];
+      els.documentPagePreview.innerHTML = `<article class="doc-page-card rounded-2xl p-4 sm:p-6"><p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Page ${current.page}</p><div class="page-content mt-2 text-sm leading-7">${current.html}</div></article>`;
+      els.previewPageIndicator.textContent = `Page ${state.currentPreviewPage + 1} / ${total}`;
+      els.previewPrevBtn.disabled = state.currentPreviewPage === 0;
+      els.previewNextBtn.disabled = state.currentPreviewPage >= total - 1;
     }
 
     function handlePreviewResult() {
       buildPreviewPages();
-      els.generatedDocument.scrollIntoView({ behavior: "smooth", block: "start" });
-      els.generatedDocument.classList.add("ring-2", "ring-brand-300", "ring-offset-2", "ring-offset-slate-900");
-      setTimeout(() => {
-        els.generatedDocument.classList.remove("ring-2", "ring-brand-300", "ring-offset-2", "ring-offset-slate-900");
-      }, 1200);
+      document.getElementById("documentPreviewPanel").scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function handlePreviewNav(direction) {
+      if (!state.previewPages.length) return;
+      state.currentPreviewPage = Math.max(0, Math.min(state.previewPages.length - 1, state.currentPreviewPage + direction));
+      renderPreviewPage();
     }
 
     function handleDownloadHtml() {
@@ -1207,12 +1142,42 @@ body.export-mode #generatedDocument {
       setStatus("success", "HTML file downloaded. You can open it in any browser.");
     }
 
-    function handlePrintPdf() {
-      handlePreviewResult();
-      enterExportMode();
-      setStatus("ready", "Export mode ready. Use print dialog to save a clean PDF.");
-      window.print();
-      setTimeout(exitExportMode, 180);
+    async function ensurePdfAsset() {
+      if (state.pdf?.pdfUrl) return state.pdf;
+      const response = await fetch("/api/render-pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: getDocumentTitle(),
+          sourceUrl: state.form.brandUrl,
+          leadMagnetType: state.form.magnetType,
+          audience: state.form.audience,
+          primaryGoal: state.form.goal,
+          generatedHtml: state.generatedHtml,
+          customerId: state.subscription.customerId || "anon",
+          generationCreatedAt: state.lastSavedGenerationAt || ""
+        })
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.error || "Could not render PDF.");
+      state.pdf = result;
+      if (Array.isArray(result.previewPages) && result.previewPages.length) {
+        state.previewPages = result.previewPages;
+        state.currentPreviewPage = 0;
+        renderPreviewPage();
+      }
+      return result;
+    }
+
+    async function handlePrintPdf() {
+      try {
+        setStatus("generating", "Rendering PDF on server...");
+        const pdf = await ensurePdfAsset();
+        window.open(`${pdf.pdfUrl}&download=1`, "_blank", "noopener,noreferrer");
+        setStatus("success", "PDF generated and download opened.");
+      } catch (error) {
+        setStatus("error", error.message || "PDF export failed.");
+      }
     }
 
     async function handleCopyHtml() {
@@ -1226,34 +1191,24 @@ body.export-mode #generatedDocument {
     }
 
     async function handleShareResult() {
-      const shareTitle = getDocumentTitle();
-      const summary = `Polished ${titleize(state.form.magnetType)} deliverable for ${getBrandLabel()}.`;
-      const fileName = `${getExportFilename()}.html`;
-
       try {
-        if (navigator.share && navigator.canShare && window.File) {
-          const file = new File([toStandaloneHtmlDocument()], fileName, { type: "text/html" });
-          if (navigator.canShare({ files: [file] })) {
-            await navigator.share({ title: shareTitle, text: summary, files: [file] });
-            setStatus("success", "Shared successfully.");
-            return;
-          }
-        }
-
+        setStatus("generating", "Preparing shareable PDF...");
+        const pdf = await ensurePdfAsset();
+        const shareTitle = getDocumentTitle();
+        const shareUrl = `${window.location.origin}${pdf.pdfUrl}`;
         if (navigator.share) {
-          await navigator.share({ title: shareTitle, text: summary, url: window.location.href });
+          await navigator.share({ title: shareTitle, text: "Your lead magnet PDF is ready.", url: shareUrl });
           setStatus("success", "Shared successfully.");
           return;
         }
-
-        await handleCopyHtml();
-        setStatus("ready", "Native sharing is unavailable here. HTML copied to clipboard as a fallback.");
+        await navigator.clipboard.writeText(shareUrl);
+        setStatus("ready", "Share URL copied to clipboard.");
       } catch (error) {
         if (error?.name === "AbortError") {
           setStatus("idle", "Share canceled.");
           return;
         }
-        setStatus("error", "Share failed in this environment. Try Download HTML instead.");
+        setStatus("error", "Share failed in this environment.");
       }
     }
 
@@ -1311,7 +1266,10 @@ body.export-mode #generatedDocument {
               <p class="text-sm font-semibold text-white">${generation.brandUrl || "Untitled generation"}</p>
               <p class="text-xs text-slate-400">${titleize(generation.magnetType || "guide")} • ${formatDate(generation.createdAt)}</p>
             </div>
-            <button type="button" class="load-generation-btn rounded-xl bg-brand-600 px-3 py-2 text-xs font-semibold text-white hover:bg-brand-500">Load</button>
+            <div class="flex gap-2">
+              <button type="button" class="load-generation-btn rounded-xl bg-brand-600 px-3 py-2 text-xs font-semibold text-white hover:bg-brand-500">Load</button>
+              ${generation.pdfUrl ? `<a href="${generation.pdfUrl}" target="_blank" rel="noopener noreferrer" class="rounded-xl border border-white/20 px-3 py-2 text-xs font-semibold text-slate-200">PDF</a>` : ""}
+            </div>
           </div>
         `;
         row.querySelector(".load-generation-btn").addEventListener("click", () => loadSavedGeneration(generation));
@@ -1379,10 +1337,11 @@ body.export-mode #generatedDocument {
       updateGenerateButtonLabel();
 
       state.generatedHtml = generation.generatedHtml || "";
+      state.pdf = generation.pdfUrl ? { pdfKey: generation.pdfKey, pdfUrl: generation.pdfUrl } : null;
+      state.lastSavedGenerationAt = generation.createdAt || "";
       setResultActionsEnabled();
       if (state.generatedHtml) {
         els.generatedDocument.innerHTML = `<div id="exportMeta" class="print-only"></div><div class="generated-html">${state.generatedHtml}</div>`;
-        els.exportMeta = document.getElementById("exportMeta");
         buildPreviewPages();
         setView("result");
       }
@@ -1464,10 +1423,11 @@ body.export-mode #generatedDocument {
         const result = await response.json();
         if (!response.ok || !result.success) throw new Error(result.error || "Generation failed.");
         state.generatedHtml = result.html;
+        state.pdf = null;
+        state.lastSavedGenerationAt = result.savedGeneration?.createdAt || "";
         renderResultPreview();
         setResultActionsEnabled();
         els.generatedDocument.innerHTML = `<div id="exportMeta" class="print-only"></div><div class="generated-html">${state.generatedHtml}</div>`;
-        els.exportMeta = document.getElementById("exportMeta");
         buildPreviewPages();
         setStatus("success", "Lead magnet generated successfully. Scroll down to review your output.");
         closePricingModal();
@@ -1486,6 +1446,9 @@ body.export-mode #generatedDocument {
       state.workspace = null;
       state.showPlanSelector = true;
       state.generatedHtml = "";
+      state.pdf = null;
+      state.previewPages = [];
+      state.currentPreviewPage = 0;
       setGeneratingState(false);
       els.leadForm.reset();
       els.planOptions.forEach((opt) => { opt.checked = opt.value === "free"; });
@@ -1578,11 +1541,8 @@ body.export-mode #generatedDocument {
     });
 
     els.previewResultBtn.addEventListener("click", handlePreviewResult);
-    els.documentPagePreview.addEventListener("click", (event) => {
-      const button = event.target.closest("[data-page-target]");
-      if (!button) return;
-      handlePreviewResult();
-    });
+    els.previewPrevBtn.addEventListener("click", () => handlePreviewNav(-1));
+    els.previewNextBtn.addEventListener("click", () => handlePreviewNav(1));
     els.downloadHtmlBtn.addEventListener("click", handleDownloadHtml);
     els.printPdfBtn.addEventListener("click", handlePrintPdf);
     els.shareResultBtn.addEventListener("click", handleShareResult);
