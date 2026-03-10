@@ -817,6 +817,8 @@ body.export-mode #generatedDocument {
       subscription: readStoredSubscription(),
       form: { brandUrl: "", fileName: "", magnetType: "guide", audience: "", goal: "", plan: "free" },
       generatedHtml: "",
+      activeGenerationId: null,
+      generatedPdf: null,
       workspace: null,
       isGenerating: false,
       isCheckoutPending: false,
@@ -1136,6 +1138,14 @@ body.export-mode #generatedDocument {
     }
 
     function buildPreviewPages() {
+      if (state.generatedPdf?.previewPages?.length) {
+        const serverPages = state.generatedPdf.previewPages;
+        const limitedServerPages = serverPages.slice(0, 6);
+        els.documentPagePreview.innerHTML = limitedServerPages.map((page) => `<button type="button" class="doc-page-card w-full rounded-2xl p-3 text-left transition hover:-translate-y-0.5"><p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Page ${page.page}</p><div class="page-content mt-2 text-sm"><p>${page.summary}</p></div></button>`).join("");
+        els.previewPageCount.textContent = `${serverPages.length} page${serverPages.length === 1 ? "" : "s"}`;
+        return;
+      }
+
       if (!state.generatedHtml) {
         els.documentPagePreview.innerHTML = "";
         els.previewPageCount.textContent = "0 pages";
@@ -1160,16 +1170,6 @@ body.export-mode #generatedDocument {
       els.previewPageCount.textContent = `${safePages.length} page${safePages.length === 1 ? "" : "s"}`;
     }
 
-    function enterExportMode() {
-      document.body.classList.add("export-mode");
-      els.exportMeta.innerHTML = getExportMetaBlock();
-    }
-
-    function exitExportMode() {
-      document.body.classList.remove("export-mode");
-      els.exportMeta.innerHTML = "";
-    }
-
     function setResultActionsEnabled() {
       const enabled = Boolean(state.generatedHtml);
       [els.previewResultBtn, els.downloadHtmlBtn, els.printPdfBtn, els.shareResultBtn, els.copyHtmlBtn].forEach((button) => {
@@ -1177,7 +1177,12 @@ body.export-mode #generatedDocument {
       });
     }
 
-    function handlePreviewResult() {
+    async function handlePreviewResult() {
+      try {
+        await ensureRenderedPdf();
+      } catch (error) {
+        setStatus("error", error.message || "Unable to fetch server PDF preview pages.");
+      }
       buildPreviewPages();
       els.generatedDocument.scrollIntoView({ behavior: "smooth", block: "start" });
       els.generatedDocument.classList.add("ring-2", "ring-brand-300", "ring-offset-2", "ring-offset-slate-900");
@@ -1199,12 +1204,49 @@ body.export-mode #generatedDocument {
       setStatus("success", "HTML file downloaded. You can open it in any browser.");
     }
 
-    function handlePrintPdf() {
-      handlePreviewResult();
-      enterExportMode();
-      setStatus("ready", "Export mode ready. Use print dialog to save a clean PDF.");
-      window.print();
-      setTimeout(exitExportMode, 180);
+    async function ensureRenderedPdf() {
+      if (state.generatedPdf?.pdfUrl && state.generatedPdf?.pdfKey) {
+        return state.generatedPdf;
+      }
+
+      const response = await fetch("/api/render-pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          generatedHtml: state.generatedHtml,
+          brandUrl: state.form.brandUrl,
+          magnetType: state.form.magnetType,
+          customerId: state.subscription.customerId || "",
+          generationId: state.activeGenerationId || undefined
+        })
+      });
+
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || "Unable to render PDF.");
+      }
+
+      state.generatedPdf = {
+        pdfUrl: result.pdfUrl,
+        pdfKey: result.pdfKey,
+        pageCount: result.pageCount,
+        previewPages: result.previewPages || []
+      };
+      if (typeof result.pageCount === "number") {
+        els.previewPageCount.textContent = `${result.pageCount} page${result.pageCount === 1 ? "" : "s"}`;
+      }
+      return state.generatedPdf;
+    }
+
+    async function handlePrintPdf() {
+      try {
+        setStatus("ready", "Rendering PDF on the server...");
+        const pdf = await ensureRenderedPdf();
+        window.open(`${pdf.pdfUrl}&download=1`, "_blank", "noopener,noreferrer");
+        setStatus("success", "PDF rendered and ready for download.");
+      } catch (error) {
+        setStatus("error", error.message || "PDF export failed.");
+      }
     }
 
     async function handleCopyHtml() {
@@ -1218,34 +1260,33 @@ body.export-mode #generatedDocument {
     }
 
     async function handleShareResult() {
-      const shareTitle = getDocumentTitle();
-      const summary = `Polished ${titleize(state.form.magnetType)} deliverable for ${getBrandLabel()}.`;
-      const fileName = `${getExportFilename()}.html`;
-
       try {
-        if (navigator.share && navigator.canShare && window.File) {
-          const file = new File([toStandaloneHtmlDocument()], fileName, { type: "text/html" });
-          if (navigator.canShare({ files: [file] })) {
-            await navigator.share({ title: shareTitle, text: summary, files: [file] });
-            setStatus("success", "Shared successfully.");
-            return;
-          }
-        }
-
+        setStatus("ready", "Rendering shareable PDF...");
+        const pdf = await ensureRenderedPdf();
+        const shareUrl = `${window.location.origin}${pdf.pdfUrl}`;
         if (navigator.share) {
-          await navigator.share({ title: shareTitle, text: summary, url: window.location.href });
-          setStatus("success", "Shared successfully.");
+          await navigator.share({
+            title: getDocumentTitle(),
+            text: `Polished ${titleize(state.form.magnetType)} deliverable for ${getBrandLabel()}.`,
+            url: shareUrl
+          });
+          setStatus("success", "Share sheet opened.");
           return;
         }
 
-        await handleCopyHtml();
-        setStatus("ready", "Native sharing is unavailable here. HTML copied to clipboard as a fallback.");
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(shareUrl);
+          setStatus("ready", "Share is unavailable here. Direct PDF URL copied to clipboard.");
+          return;
+        }
+
+        setStatus("error", "Share is unavailable in this browser.");
       } catch (error) {
         if (error?.name === "AbortError") {
           setStatus("idle", "Share canceled.");
           return;
         }
-        setStatus("error", "Share failed in this environment. Try Download HTML instead.");
+        setStatus("error", error.message || "Share failed in this environment.");
       }
     }
 
@@ -1369,6 +1410,8 @@ body.export-mode #generatedDocument {
       updateGenerateButtonLabel();
 
       state.generatedHtml = generation.generatedHtml || "";
+      state.activeGenerationId = generation.id || null;
+      state.generatedPdf = generation.pdfKey ? { pdfKey: generation.pdfKey, pdfUrl: `/api/pdf?key=${encodeURIComponent(generation.pdfKey)}` } : null;
       setResultActionsEnabled();
       if (state.generatedHtml) {
         els.generatedDocument.innerHTML = `<div id="exportMeta" class="print-only"></div><div class="generated-html">${state.generatedHtml}</div>`;
@@ -1487,6 +1530,8 @@ body.export-mode #generatedDocument {
         const result = await response.json();
         if (!response.ok || !result.success) throw new Error(result.error || "Generation failed.");
         state.generatedHtml = result.html;
+        state.activeGenerationId = result.savedGeneration?.id || null;
+        state.generatedPdf = null;
         renderResultPreview();
         setResultActionsEnabled();
         els.generatedDocument.innerHTML = `<div id="exportMeta" class="print-only"></div><div class="generated-html">${state.generatedHtml}</div>`;
@@ -1508,6 +1553,8 @@ body.export-mode #generatedDocument {
       state.form = { brandUrl: "", fileName: "", magnetType: "guide", audience: "", goal: "", plan: "free" };
       state.workspace = null;
       state.generatedHtml = "";
+      state.activeGenerationId = null;
+      state.generatedPdf = null;
       setGeneratingState(false);
       els.leadForm.reset();
       renderResultPreview();

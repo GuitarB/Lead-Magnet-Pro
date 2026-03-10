@@ -60,9 +60,14 @@ export async function onRequestGet(context) {
     const generationsUsed = usageRow?.generation_count || 0;
     const generationsRemaining = Math.max(generationLimit - generationsUsed, 0);
 
+
+    const generationTableInfo = await env.DB.prepare("PRAGMA table_info(generations)").all();
+    const generationColumns = new Set((generationTableInfo?.results || []).map((column) => column.name));
+    const hasPdfColumns = generationColumns.has("pdf_key") && generationColumns.has("pdf_created_at");
+
     const rows = await env.DB
       .prepare(
-        `SELECT brand_url, magnet_type, generated_html, created_at
+        `SELECT id, brand_url, magnet_type, generated_html, created_at${hasPdfColumns ? ', pdf_key, pdf_created_at' : ''}
          FROM generations
          WHERE stripe_customer_id = ?
          ORDER BY created_at DESC
@@ -72,10 +77,13 @@ export async function onRequestGet(context) {
       .all();
 
     const recentGenerations = (rows?.results || []).map((row) => ({
+      id: row.id,
       brandUrl: row.brand_url || "",
       magnetType: row.magnet_type || "guide",
       createdAt: row.created_at,
       generatedHtml: row.generated_html || "",
+      pdfKey: hasPdfColumns ? row.pdf_key || null : null,
+      pdfCreatedAt: hasPdfColumns ? row.pdf_created_at || null : null,
       plan
     }));
 
